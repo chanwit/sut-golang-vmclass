@@ -2,7 +2,7 @@ package main
 
 import ( "fmt"
 		"os"
-	//	"io"	
+		"io"	
 		"encoding/binary"
 )
 type classfile struct{
@@ -150,34 +150,40 @@ const (		CONSTANT_Class				=	7
 		CONSTANT_MethodType			=	16
 		CONSTANT_InvokeDynamic			=	18
 )
-
-func readMagic(file *os.File,cf classfile) {
-    binary.Read(file, binary.BigEndian, &(cf.magic))
-     fmt.Printf("Magic co*os.Filede = %x\n", cf.magic)
+type decoder struct{
+	file 	io.Reader
+	bo		binary.ByteOrder
+	cf 		*classfile
 }
 
-func readVersion(file *os.File,cf classfile) {
-    binary.Read(file, binary.BigEndian, &(cf.minor_version))
-    binary.Read(file, binary.BigEndian, &(cf.major_version))
-    fmt.Printf("Version = %d.%d\n", cf.major_version,cf.minor_version)
+func (d *decoder) readMagic() {
+
+    binary.Read(d.file, d.bo, &(d.cf.magic))
+    fmt.Printf("Magic code = %x\n", d.cf.magic)
 }
 
-func readConstantPool(file *os.File,cf *classfile) {
-	binary.Read(file,binary.BigEndian,&(cf.constant_pool_count))
-	fmt.Printf("cp count = %d\n", cf.constant_pool_count)
+func (d *decoder) readVersion() {
+    binary.Read(d.file, d.bo, &(d.cf.minor_version))
+    binary.Read(d.file, d.bo, &(d.cf.major_version))
+    fmt.Printf("Version = %d.%d\n", d.cf.major_version,d.cf.minor_version)
+}
 
-	cf.constant_pool = make([]cp_info, cf.constant_pool_count)
-	for i:= uint16(1); i<cf.constant_pool_count ;i++{
+func (d *decoder) readConstantPool() {
+	binary.Read(d.file,d.bo,&(d.cf.constant_pool_count))
+	fmt.Printf("cp count = %d\n", d.cf.constant_pool_count)
+
+	d.cf.constant_pool = make([]cp_info, d.cf.constant_pool_count)
+	for i:= uint16(1); i<d.cf.constant_pool_count ;i++{
 		
 		var tag uint8
-		binary.Read(file,binary.BigEndian,&(tag))
+		binary.Read(d.file,d.bo,&(tag))
 			switch tag { 
 				case CONSTANT_Class: fallthrough
 				case CONSTANT_MethodType: fallthrough
 				case CONSTANT_String:
 						info := make([]byte, 2)
-						binary.Read(file,binary.BigEndian,info)
-						cf.constant_pool[i]=cp_info{tag:tag, info:info }
+						binary.Read(d.file,d.bo,info)
+						d.cf.constant_pool[i]=cp_info{tag:tag, info:info }
 				case CONSTANT_Fieldref: fallthrough
 				case CONSTANT_Methodref: fallthrough
 				case CONSTANT_InterfaceMethodref: fallthrough
@@ -185,85 +191,85 @@ func readConstantPool(file *os.File,cf *classfile) {
 				case CONSTANT_Float: fallthrough
 				case CONSTANT_NameAndType:
 						info := make([]byte, 4)
-						binary.Read(file,binary.BigEndian,info)
-						cf.constant_pool[i]=cp_info{tag:tag, info:info }
+						binary.Read(d.file,d.bo,info)
+						d.cf.constant_pool[i]=cp_info{tag:tag, info:info }
 				case CONSTANT_Long:	fallthrough
 				case CONSTANT_Double:
 						info := make([]byte, 8)
-						binary.Read(file,binary.BigEndian,info)
-						cf.constant_pool[i]=cp_info{tag:tag, info:info }
+						binary.Read(d.file,d.bo,info)
+						d.cf.constant_pool[i]=cp_info{tag:tag, info:info }
 				
 				case CONSTANT_Utf8:
 						var length uint16
-						binary.Read(file,binary.BigEndian,&(length))
+						binary.Read(d.file,d.bo,&(length))
 						info := make([]byte, length+2)
 
-						binary.BigEndian.PutUint16(info[0:2], length)
+						d.bo.PutUint16(info[0:2], length)
 
-						binary.Read(file,binary.BigEndian,info[2:])
-						cf.constant_pool[i]=cp_info{tag:tag, info:info }
+						binary.Read(d.file,d.bo,info[2:])
+						d.cf.constant_pool[i]=cp_info{tag:tag, info:info }
 						fmt.Printf("%d %s\n",i,info[2:])
 
 
 				case CONSTANT_MethodHandle:
 						info := make([]byte, 3)
-						binary.Read(file,binary.BigEndian,info)
-						cf.constant_pool[i]=cp_info{tag:tag, info:info }
+						binary.Read(d.file,d.bo,info)
+						d.cf.constant_pool[i]=cp_info{tag:tag, info:info }
 				
 				case CONSTANT_InvokeDynamic:
 						info := make([]byte, 4)
-						binary.Read(file,binary.BigEndian,info)
-						cf.constant_pool[i]=cp_info{tag:tag, info:info }
+						binary.Read(d.file,d.bo,info)
+						d.cf.constant_pool[i]=cp_info{tag:tag, info:info }
 		}
 	}
 	
 }
-func readFlag(file *os.File, cf classfile) {
-	binary.Read(file, binary.BigEndian, &(cf.access_flags))
-	if cf.access_flags & ACC_PUBLIC == ACC_PUBLIC {
+func (d *decoder) readFlag() {
+	binary.Read(d.file, d.bo, &(d.cf.access_flags))
+	if d.cf.access_flags & ACC_PUBLIC == ACC_PUBLIC {
 		fmt.Println("ACC_PUBLIC")
 	}
-	if cf.access_flags & ACC_ABSTRACT == ACC_ABSTRACT{
+	if d.cf.access_flags & ACC_ABSTRACT == ACC_ABSTRACT{
 		fmt.Println("ACC_ABSTRACT")
 	}
-	if cf.access_flags & ACC_SUPER == ACC_SUPER{
+	if d.cf.access_flags & ACC_SUPER == ACC_SUPER{
 		fmt.Println("ACC_SUPER")
 	}
 
 }
-func readThis(file *os.File, cf classfile) {
-	binary.Read(file,binary.BigEndian,&(cf.this_class))
+func (d *decoder) readThis() {
+	binary.Read(d.file,d.bo,&(d.cf.this_class))
 
-	thisc := cf.constant_pool[cf.this_class]
-	fmt.Println(string(cf.constant_pool[(binary.BigEndian.Uint16(thisc.info))].info[2:]))
+	thisc := d.cf.constant_pool[d.cf.this_class]
+	fmt.Println(string(d.cf.constant_pool[(d.bo.Uint16(thisc.info))].info[2:]))
 
-	binary.Read(file,binary.BigEndian,&(cf.super_class))
+	binary.Read(d.file,d.bo,&(d.cf.super_class))
 
-	thiss := cf.constant_pool[cf.super_class]
-	fmt.Println(string(cf.constant_pool[(binary.BigEndian.Uint16(thiss.info))].info[2:]))
+	thiss := d.cf.constant_pool[d.cf.super_class]
+	fmt.Println(string(d.cf.constant_pool[(d.bo.Uint16(thiss.info))].info[2:]))
 
 }
-func readInterface(file *os.File, cf *classfile) {
-	binary.Read(file,binary.BigEndian,&(cf.interfaces_count))
-	fmt.Println(cf.interfaces_count)
+func (d *decoder) readInterface() {
+	binary.Read(d.file,d.bo,&(d.cf.interfaces_count))
+	fmt.Println(d.cf.interfaces_count)
 	
 	
-	cf.interfaces = make([]uint16 , cf.interfaces_count)
+	d.cf.interfaces = make([]uint16 , d.cf.interfaces_count)
 	
 
-	for i:=uint16(0); i<cf.interfaces_count ;i++{
-		binary.Read(file,binary.BigEndian,&(cf.interfaces[i]))
-		inter := cf.constant_pool[cf.interfaces[i]]
+	for i:=uint16(0); i<d.cf.interfaces_count ;i++{
+		binary.Read(d.file,d.bo,&(d.cf.interfaces[i]))
+		inter := d.cf.constant_pool[d.cf.interfaces[i]]
 		fmt.Printf("interface = ")
-		fmt.Println(string(cf.constant_pool[(binary.BigEndian.Uint16(inter.info))].info[2:]))
+		fmt.Println(string(d.cf.constant_pool[(d.bo.Uint16(inter.info))].info[2:]))
 
 
 	}
 }
 
-func readField(file *os.File, cf classfile) {
-	binary.Read(file,binary.BigEndian,&(cf.fields_count))
-	fmt.Println(cf.fields_count)
+func (d *decoder) readField() {
+	binary.Read(d.file,d.bo,&(d.cf.fields_count))
+	fmt.Println(d.cf.fields_count)
 }
 
 
@@ -279,15 +285,16 @@ func openfile(filename string,cf classfile) {
 			fmt.Printf("%v", err)	
 		}
 	defer f.Close()
+	d := decoder{file:f, bo:binary.BigEndian ,cf: &cf}
 
 	checkSize(f)
-    readMagic(f,cf)
-    readVersion(f,cf)
-    readConstantPool(f, &cf)
-    readFlag(f,cf)
-    readThis(f,cf)
-    readInterface(f, &cf)
-    readField(f, cf)
+    d.readMagic()
+    d.readVersion()
+    d.readConstantPool()
+    d.readFlag()
+    d.readThis()
+    d.readInterface()
+    d.readField()
 }
 
 
