@@ -39,6 +39,8 @@ type classFile struct {
 	fields 					[]field_info
 	method_count 			uint16
 	methods 				[]method_info
+	attributes_count		uint16
+	attributes 				[]attribute_info
 }
 
 const (
@@ -141,18 +143,18 @@ type field_info struct {
     attributes 				[]attribute_info
 }
 
-type attribute_info struct {
-    attribute_name_index	uint16
-    attribute_length		uint32
-    info 					[]uint8
-}
-
 type method_info struct {
 	access_flags			uint16
 	name_index 				uint16
 	descriptor_index 		uint16
 	attributes_count 		uint16
 	attributes 				[]attribute_info
+}
+
+type attribute_info struct {
+    attribute_name_index	uint16
+    attribute_length		uint32
+    info 					[]uint8
 }
 
 type decoder struct {
@@ -336,6 +338,22 @@ func (d *decoder) readMethod() {
 	}
 }
 
+func (d *decoder) readAttribute() {
+	binary.Read(d.file, d.bo, &(d.cf.attributes_count))
+	fmt.Printf("attribute count : %d\n", d.cf.attributes_count)
+	d.cf.attributes = make([]attribute_info, d.cf.attributes_count)
+	for i := uint16(0); i < d.cf.attributes_count; i++ {
+		var name_index 	uint16
+		var length 		uint32
+		binary.Read(d.file, d.bo, &name_index)
+		binary.Read(d.file, d.bo, &length)
+		info := make([]uint8, length)
+		binary.Read(d.file, d.bo, &info)
+		d.cf.attributes[i] = attribute_info{ attribute_name_index:name_index, attribute_length:length, info:info }
+	}
+	fmt.Println(d.cf.attributes)
+}
+
 func readFile(fileClass string, cf classFile) {
 	f, err := os.Open(fileClass)
 	if err != nil {
@@ -353,6 +371,7 @@ func readFile(fileClass string, cf classFile) {
 	d.readInterface()
 	d.readField()
 	d.readMethod()
+	d.readAttribute()
 }
 
 func main() {
