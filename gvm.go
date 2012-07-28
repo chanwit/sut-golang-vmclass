@@ -323,6 +323,16 @@ func (d *decoder) readMethod() {
 		binary.Read(d.file, d.bo, &mi.descriptor_index)
 		binary.Read(d.file, d.bo, &mi.attributes_count)
 		fmt.Println(mi.access_flags, mi.name_index, mi.descriptor_index, mi.attributes_count)
+
+		mi.attributes = make([]attribute_info, mi.attributes_count)
+		for j := uint16(0); j < mi.attributes_count; j++ {
+			var name_index 	uint16
+			var length 		uint32
+			binary.Read(d.file, d.bo, &name_index)
+			binary.Read(d.file, d.bo, &length)
+			info := make([]uint8, length)
+			binary.Read(d.file, d.bo, &info)
+		}
 	}
 }
 
