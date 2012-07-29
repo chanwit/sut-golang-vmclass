@@ -301,7 +301,7 @@ func (d *decoder) readField() {
        		fi := d.cf.fields[i]
        		cp1 := cp[fi.name_index]
        		cp2 := cp[fi.descriptor_index]
-       		fmt.Println( fi,string(cp1.info[2:]), string(cp2.info[2:]))
+       		fmt.Println( string(cp1.info[2:]), string(cp2.info[2:]))
        		
        	}
 }
@@ -316,8 +316,9 @@ func (d *decoder) readMethod() {
 				binary.Read(d.file, d.bo, &mi.name_index)
 				binary.Read(d.file, d.bo, &mi.descriptor_index)
 				binary.Read(d.file, d.bo, &mi.attributes_count)
-				fmt.Println(mi.access_flags, mi.name_index, mi.descriptor_index, mi.attributes_count)
-				d.cf.method[i]=method_info{access_flags:mi.access_flags }
+					met := d.cf.constant_pool[mi.name_index]
+					d.cf.method[i]=method_info{access_flags:mi.access_flags, name_index:mi.name_index, descriptor_index:mi.descriptor_index, attributes_count:mi.attributes_count}
+					fmt.Println(met, string(met.info[2:]))
 
 				mi.attributes = make([]attribute_info, mi.attributes_count)
 				for j := uint16(0); j < mi.attributes_count; j++ {
@@ -325,19 +326,11 @@ func (d *decoder) readMethod() {
 					var length uint32
 					binary.Read(d.file, d.bo, &name_index)
 					binary.Read(d.file, d.bo, &length)
-						info := make([]uint8, length)
-						binary.Read(d.file, d.bo, &info)
+					info := make([]uint8, length)
+					binary.Read(d.file, d.bo, &info)
 				}
 			}
-		cp := d.cf.constant_pool
-    	for i := uint16(0); i < d.cf.method_count; i++ {
-       		fi := d.cf.method[i]
-       		cp1 := cp[fi.name_index]
-       		cp2 := cp[fi.descriptor_index]
-       		fmt.Println( string(cp1.info[2:]), string(cp2.info[2:]))
-       	}
 }
-
 func (d *decoder) readAttribute() {
 		binary.Read(d.file, d.bo, &(d.cf.attributes_count))
 		fmt.Printf("attribute count : %d\n", d.cf.attributes_count)
