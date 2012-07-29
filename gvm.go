@@ -325,7 +325,8 @@ func (d *decoder) readMethod() {
 		binary.Read(d.file, d.bo, &mi.name_index)
 		binary.Read(d.file, d.bo, &mi.descriptor_index)
 		binary.Read(d.file, d.bo, &mi.attributes_count)
-		fmt.Println(mi.access_flags, mi.name_index, mi.descriptor_index, mi.attributes_count)
+		met := d.cf.constant_pool[mi.name_index]
+		fmt.Println(met, string(met.info[2:]))
 
 		mi.attributes = make([]attribute_info, mi.attributes_count)
 		for j := uint16(0); j < mi.attributes_count; j++ {
