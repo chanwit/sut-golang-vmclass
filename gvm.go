@@ -259,17 +259,38 @@ func (d *decoder) readFlag() {
 	if d.cf.access_flags & ACC_PUBLIC == ACC_PUBLIC {
 		fmt.Println("ACC_PUBLIC")
 	}
+	if d.cf.access_flags & ACC_PRIVATE == ACC_PRIVATE {
+		fmt.Println("ACC_PRIVATE")
+	}
+	if d.cf.access_flags & ACC_PROTECTED == ACC_PROTECTED {
+		fmt.Println("ACC_PROTECTED")
+	}
+	if d.cf.access_flags & ACC_STATIC == ACC_STATIC {
+		fmt.Println("ACC_STATIC")
+	}
 	if d.cf.access_flags & ACC_FINAL == ACC_FINAL {
 		fmt.Println("ACC_FINAL")
 	}
 	if d.cf.access_flags & ACC_SUPER == ACC_SUPER {
 		fmt.Println("ACC_SUPER")
 	}
+	if d.cf.access_flags & ACC_VOLATILE == ACC_VOLATILE {
+		fmt.Println("ACC_VOLATILE")
+	}
+	if d.cf.access_flags & ACC_TRANSIENT == ACC_TRANSIENT {
+		fmt.Println("ACC_TRANSIENT")
+	}
 	if d.cf.access_flags & ACC_INTERFACE == ACC_INTERFACE {
 		fmt.Println("ACC_INTERFACE")
 	}
 	if d.cf.access_flags & ACC_ABSTRACT == ACC_ABSTRACT {
 		fmt.Println("ACC_ABSTRACT")
+	}
+	if d.cf.access_flags & ACC_SYNTHETIC == ACC_SYNTHETIC {
+		fmt.Println("ACC_SYNTHETIC")
+	}
+	if d.cf.access_flags & ACC_ENUM == ACC_ENUM {
+		fmt.Println("ACC_ENUM")
 	}
 }
 
