@@ -6,22 +6,22 @@ import ( "fmt"
 		"encoding/binary"
 )
 type classfile struct{
-	magic 								uint32
+	magic 									uint32
 	minor_version 							uint16
 	major_version 							uint16
 	constant_pool_count						uint16
 	constant_pool							[]cp_info
 	access_flags							uint16
-	this_class							uint16
-	super_class							uint16
+	this_class								uint16
+	super_class								uint16
 	interfaces_count						uint16
-	interfaces							[]uint16
+	interfaces								[]uint16
 	fields_count							uint16
-	fields								[]field_info
-	methods_count							uint16
-	//methods							[]method_info
+	fields									[]field_info
+	method_count							uint16
+	method									[]method_info
 	attributes_count						uint16
-	//attributes[attributes_count]					*attributes_info
+	attributes					[]attribute_info
 }	
 
 const (
@@ -46,16 +46,23 @@ type cp_info struct{
 	info 	[]uint8
 }
 type field_info struct {
-    access_flags 	uint16
+    access_flags 		uint16
     name_index      	uint16
     descriptor_index	uint16
     attributes_count	uint16
     attributes		[]attribute_info 	//[attributes_count]
 }
+type method_info struct {
+	access_flags		uint16
+	name_index 			uint16
+	descriptor_index 	uint16
+	attributes_count 	uint16
+	attributes 			[]attribute_info
+}
 type attribute_info struct{
     attribute_name_index	uint16
     attribute_length		uint32
-    info			[]uint8	//[attribute_length]
+    info					[]uint8	//[attribute_length]
 }
 
 type CONSTANT_Class_info struct{
@@ -227,13 +234,13 @@ func (d *decoder) readConstantPool() {
 func (d *decoder) readFlag() {
 	binary.Read(d.file, d.bo, &(d.cf.access_flags))
 	if d.cf.access_flags & ACC_PUBLIC == ACC_PUBLIC {
-		fmt.Println("ACC_PUBLIC")
+		fmt.Print("ACC_PUBLIC ")
 	}
 	if d.cf.access_flags & ACC_ABSTRACT == ACC_ABSTRACT{
-		fmt.Println("ACC_ABSTRACT")
+		fmt.Print("ACC_ABSTRACT ")
 	}
 	if d.cf.access_flags & ACC_SUPER == ACC_SUPER{
-		fmt.Println("ACC_SUPER")
+		fmt.Print("ACC_SUPER ")
 	}
 
 }
@@ -241,12 +248,12 @@ func (d *decoder) readThis() {
 	binary.Read(d.file,d.bo,&(d.cf.this_class))
 
 	thisc := d.cf.constant_pool[d.cf.this_class]
-	fmt.Println(string(d.cf.constant_pool[(d.bo.Uint16(thisc.info))].info[2:]))
+	fmt.Println("\nthis_class is "+string(d.cf.constant_pool[(d.bo.Uint16(thisc.info))].info[2:]))
 
 	binary.Read(d.file,d.bo,&(d.cf.super_class))
-
+	//fmt.Println(d.cf.super_class)
 	thiss := d.cf.constant_pool[d.cf.super_class]
-	fmt.Println(string(d.cf.constant_pool[(d.bo.Uint16(thiss.info))].info[2:]))
+	fmt.Println("super_class is "+string(d.cf.constant_pool[(d.bo.Uint16(thiss.info))].info[2:]))
 
 }
 func (d *decoder) readInterface() {
@@ -268,11 +275,87 @@ func (d *decoder) readInterface() {
 }
 
 func (d *decoder) readField() {
-	binary.Read(d.file,d.bo,&(d.cf.fields_count))
-	fmt.Println(d.cf.fields_count)
+		binary.Read(d.file, d.bo, &(d.cf.fields_count))
+		fmt.Printf("field count : %d\n", d.cf.fields_count)
+		d.cf.fields = make([]field_info, d.cf.fields_count)
+		for i := uint16(0); i < d.cf.fields_count; i++ {
+			var fi field_info
+				binary.Read(d.file, d.bo, &fi.access_flags)
+				binary.Read(d.file, d.bo, &fi.name_index)
+				binary.Read(d.file, d.bo, &fi.descriptor_index)
+				binary.Read(d.file, d.bo, &fi.attributes_count)
+			d.cf.fields[i]=field_info{access_flags:fi.access_flags,name_index:fi.name_index,descriptor_index:fi.descriptor_index,attributes_count:fi.attributes_count}
+			
+			fi.attributes = make([]attribute_info, fi.attributes_count)
+			for j := uint16(0); j < fi.attributes_count; j++ {
+				var name_index uint16
+				var length uint32
+				binary.Read(d.file, d.bo, &name_index)
+				binary.Read(d.file, d.bo, &length)
+					info := make([]uint8, length)
+					binary.Read(d.file, d.bo, &info)
+			}
+		}
+		cp := d.cf.constant_pool
+    	for i := uint16(0); i < d.cf.fields_count; i++ {
+       		fi := d.cf.fields[i]
+       		cp1 := cp[fi.name_index]
+       		cp2 := cp[fi.descriptor_index]
+       		fmt.Println( fi,string(cp1.info[2:]), string(cp2.info[2:]))
+       		
+       	}
 }
 
+func (d *decoder) readMethod() {
+		binary.Read(d.file, d.bo, &(d.cf.method_count))
+		fmt.Printf("method count : %d\n", d.cf.method_count)
+		d.cf.method = make([]method_info, d.cf.method_count)
+			for i := uint16(0); i < d.cf.method_count; i++ {
+				var mi method_info
+				binary.Read(d.file, d.bo, &mi.access_flags)
+				binary.Read(d.file, d.bo, &mi.name_index)
+				binary.Read(d.file, d.bo, &mi.descriptor_index)
+				binary.Read(d.file, d.bo, &mi.attributes_count)
+				fmt.Println(mi.access_flags, mi.name_index, mi.descriptor_index, mi.attributes_count)
+				d.cf.method[i]=method_info{access_flags:mi.access_flags }
 
+				mi.attributes = make([]attribute_info, mi.attributes_count)
+				for j := uint16(0); j < mi.attributes_count; j++ {
+					var name_index uint16
+					var length uint32
+					binary.Read(d.file, d.bo, &name_index)
+					binary.Read(d.file, d.bo, &length)
+						info := make([]uint8, length)
+						binary.Read(d.file, d.bo, &info)
+				}
+			}
+		cp := d.cf.constant_pool
+    	for i := uint16(0); i < d.cf.method_count; i++ {
+       		fi := d.cf.method[i]
+       		cp1 := cp[fi.name_index]
+       		cp2 := cp[fi.descriptor_index]
+       		fmt.Println( string(cp1.info[2:]), string(cp2.info[2:]))
+       	}
+}
+
+func (d *decoder) readAttribute() {
+		binary.Read(d.file, d.bo, &(d.cf.attributes_count))
+		fmt.Printf("attribute count : %d\n", d.cf.attributes_count)
+		d.cf.attributes = make([]attribute_info, d.cf.attributes_count)
+		for i := uint16(0); i < d.cf.attributes_count; i++ {
+			var name_index uint16
+			var length uint32
+			binary.Read(d.file, d.bo, &name_index)
+			binary.Read(d.file, d.bo, &length)
+				info := make([]uint8, length)
+				binary.Read(d.file, d.bo, &info)
+				d.cf.attributes[i] = attribute_info{ attribute_name_index:name_index, attribute_length:length, info:info }
+				fmt.Println(d.cf.attributes)
+		}
+			fmt.Println(d.cf.attributes)
+}
+		 	
+		
 func checkSize(f *os.File) (){
 	state,_:=f.Stat()
 	fmt.Printf("size = %d bytes\n", state.Size())
@@ -295,6 +378,8 @@ func openfile(filename string,cf classfile) {
     d.readThis()
     d.readInterface()
     d.readField()
+    d.readAttribute()
+    d.readMethod()
 }
 
 
