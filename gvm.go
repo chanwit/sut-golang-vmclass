@@ -300,7 +300,8 @@ func (d *decoder) readField() {
 		binary.Read(d.file, d.bo, &fi.name_index)
 		binary.Read(d.file, d.bo, &fi.descriptor_index)
 		binary.Read(d.file, d.bo, &fi.attributes_count)
-		fmt.Println(fi.access_flags, fi.name_index, fi.descriptor_index, fi.attributes_count)
+		fie := d.cf.constant_pool[fi.name_index]
+		fmt.Println(fie, string(fie.info[2:]))
 
 		fi.attributes = make([]attribute_info, fi.attributes_count)
 		for j := uint16(0); j < fi.attributes_count; j++ {
@@ -352,7 +353,7 @@ func (d *decoder) readAttribute() {
 		d.cf.attributes[i] = attribute_info{ attribute_name_index:name_index, attribute_length:length, info:info }
 
 		att := d.cf.constant_pool[name_index]
-		fmt.Println(d.cf.constant_pool[name_index], string(att.info[2:]))
+		fmt.Println(att, string(att.info[2:]))
 	}
 }
 
