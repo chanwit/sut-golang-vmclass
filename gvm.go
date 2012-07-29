@@ -350,8 +350,10 @@ func (d *decoder) readAttribute() {
 		info := make([]uint8, length)
 		binary.Read(d.file, d.bo, &info)
 		d.cf.attributes[i] = attribute_info{ attribute_name_index:name_index, attribute_length:length, info:info }
+
+		att := d.cf.constant_pool[name_index]
+		fmt.Println(d.cf.constant_pool[name_index], string(att.info[2:]))
 	}
-	fmt.Println(d.cf.attributes)
 }
 
 func readFile(fileClass string, cf classFile) {
