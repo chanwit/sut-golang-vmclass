@@ -45,10 +45,17 @@ type classFile struct {
 
 const (
     ACC_PUBLIC      = 0x0001
+    ACC_PRIVATE 	= 0x0002
+    ACC_PROTECTED 	= 0x0004
+    ACC_STATIC 		= 0x0008
     ACC_FINAL       = 0x0010
     ACC_SUPER       = 0x0020
+    ACC_VOLATILE 	= 0x0040
+    ACC_TRANSIENT 	= 0x0080
     ACC_INTERFACE   = 0x0200
     ACC_ABSTRACT    = 0x0400
+    ACC_SYNTHETIC 	= 0x1000
+    ACC_ENUM 		= 0x4000
 )
 
 type cp_info struct {
@@ -270,12 +277,10 @@ func (d *decoder) readClass() {
 	binary.Read(d.file, d.bo, &(d.cf.this_class))
 	binary.Read(d.file, d.bo, &(d.cf.super_class))
 	fmt.Println("class")
-	fmt.Println(d.cf.constant_pool[d.cf.this_class])
-	fmt.Println(d.cf.constant_pool[d.cf.super_class])
 	thisc := d.cf.constant_pool[d.cf.this_class]
 	superc := d.cf.constant_pool[d.cf.super_class]
-	fmt.Println(string(d.cf.constant_pool[(d.bo.Uint16(thisc.info))].info[2:]))
-	fmt.Println(string(d.cf.constant_pool[(d.bo.Uint16(superc.info))].info[2:]))
+	fmt.Println(thisc, string(d.cf.constant_pool[(d.bo.Uint16(thisc.info))].info[2:]))
+	fmt.Println(superc, string(d.cf.constant_pool[(d.bo.Uint16(superc.info))].info[2:]))
 }
 
 func (d *decoder) readInterface() {
