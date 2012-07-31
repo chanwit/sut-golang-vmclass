@@ -5,6 +5,7 @@ import (
 	"os"
 	//"io"
 	"encoding/binary"
+	//"bytes"
 )
 
 const (
@@ -162,6 +163,25 @@ type attribute_info struct {
     attribute_name_index	uint16
     attribute_length		uint32
     info 					[]uint8
+}
+
+type code_attribute struct {
+	attribute_name_index	uint16
+	attribute_length		uint32
+	max_stack				uint16
+	max_locals				uint16
+	code_length				uint32
+	code 					[]uint8
+	exception_table_length	uint16
+	attributes_count		uint16
+	attributes				[]attribute_info
+}
+
+type exception_table struct {
+	start_pc				uint16
+	end_pc					uint16
+	handler_pc				uint16
+	catch_type				uint16
 }
 
 type decoder struct {
@@ -359,9 +379,21 @@ func (d *decoder) readMethod() {
 			var name_index 	uint16
 			var length 		uint32
 			binary.Read(d.file, d.bo, &name_index)
+			lookup := string(d.cf.constant_pool[name_index].info[2:])
 			binary.Read(d.file, d.bo, &length)
 			info := make([]uint8, length)
 			binary.Read(d.file, d.bo, &info)
+			if lookup == "Code" {
+				var ca code_attribute
+				ca.attribute_name_index = name_index
+				ca.attribute_length = length
+				ca.max_stack = d.bo.Uint16(info[0:2])
+				ca.max_locals = d.bo.Uint16(info[2:4])
+				ca.code_length = d.bo.Uint32(info[4:8])
+				ca.code = info[8:8+ca.code_length]
+				fmt.Println(ca.max_stack, ca.max_locals, ca.code_length)
+				fmt.Println(ca.code)
+			}
 		}
 	}
 }
