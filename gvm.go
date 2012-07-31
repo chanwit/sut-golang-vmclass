@@ -5,6 +5,7 @@ import ( "fmt"
 		"os"
 		"io"	
 		"encoding/binary"
+		//"bytes"
 )
 type classfile struct{
 	magic 									uint32
@@ -51,7 +52,7 @@ type field_info struct{
     name_index      	uint16
     descriptor_index	uint16
     attributes_count	uint16
-    attributes			[]constantValue_attribute 	//[attributes_count]
+    attributes			[]attribute_info 	//[attributes_count]
 }
 type constantValue_attribute struct{
     attribute_name_index	uint16
@@ -63,7 +64,7 @@ type method_info struct {
 	name_index 			uint16
 	descriptor_index 	uint16
 	attributes_count 	uint16
-	attributes 			[]code_attribute
+	attributes 			[]attribute_info
 }
 type code_attribute struct{
     attribute_name_index	uint16
@@ -305,17 +306,29 @@ func (d *decoder) readField() {
 				binary.Read(d.file, d.bo, &fi.attributes_count)
 			d.cf.fields[i]=field_info{access_flags:fi.access_flags,name_index:fi.name_index,descriptor_index:fi.descriptor_index,attributes_count:fi.attributes_count}
 			
+
+			fi.attributes = make([]attribute_info, fi.attributes_count)
+					for j := uint16(0); j < fi.attributes_count; j++ {
+						var name_index uint16
+						var length uint32
+						binary.Read(d.file, d.bo, &name_index)
+						binary.Read(d.file, d.bo, &length)
+						info := make([]uint8, length)
+						binary.Read(d.file, d.bo, &info)
+					}
+/*
 			fi.attributes = make([]constantValue_attribute, fi.attributes_count)
-			for j := uint16(0); j < fi.attributes_count; j++ {
+			for k := uint16(0); k < fi.attributes_count; k++ {
 				var name_index uint16
 				var length uint32
 				var constantvalue_index uint16
 				binary.Read(d.file, d.bo, &name_index)
 				binary.Read(d.file, d.bo, &length)
 				binary.Read(d.file, d.bo, &constantvalue_index)
-				fi.attributes[j]=constantValue_attribute{attribute_name_index:name_index, attribute_length:length,constantvalue_index:constantvalue_index}
+				fi.attributes[k]=constantValue_attribute{attribute_name_index:name_index, attribute_length:length,constantvalue_index:constantvalue_index}
 			}
 		}
+		
 		cp := d.cf.constant_pool
     	for i := uint16(0); i < d.cf.fields_count; i++ {
        		fi := d.cf.fields[i]
@@ -332,9 +345,9 @@ func (d *decoder) readField() {
 					}
        		fmt.Println( string(cp2.info[2:]), string(cp1.info[2:]))
        		
-       	}
+       	}*/
 }
-
+}
 func (d *decoder) readMethod() {
 	binary.Read(d.file, d.bo, &(d.cf.method_count))
 	fmt.Printf("method count : %d\n", d.cf.method_count)
@@ -347,7 +360,7 @@ func (d *decoder) readMethod() {
 		binary.Read(d.file, d.bo, &mi.attributes_count)
 		fmt.Println("method detail: ",mi.access_flags, mi.name_index, mi.descriptor_index, mi.attributes_count)
 		d.cf.method[i]=method_info{access_flags:mi.access_flags, name_index:mi.name_index, descriptor_index:mi.descriptor_index, attributes_count:mi.attributes_count}			
-			metname := d.cf.constant_pool[mi.name_index]
+		/*	metname := d.cf.constant_pool[mi.name_index]
 			metdes := d.cf.constant_pool[mi.descriptor_index]
 			if mi.access_flags & ACC_PUBLIC == ACC_PUBLIC {
 						fmt.Print("public ")
@@ -359,7 +372,65 @@ func (d *decoder) readMethod() {
 						fmt.Print("protected ")
 					}
 			fmt.Println(string(metname.info[2:]),string(metdes.info[2:])) 
-		
+		*/
+			mi.attributes = make([]attribute_info, mi.attributes_count)
+					for j := uint16(0); j < mi.attributes_count; j++ {
+						var name_index uint16
+						var length uint32
+						var ca code_attribute
+						binary.Read(d.file, d.bo, &name_index)
+						binary.Read(d.file, d.bo, &length)
+							info := make([]uint8, length)
+						binary.Read(d.file, d.bo, info)
+					nameCheck:=d.cf.constant_pool[name_index]
+					fmt.Println(string(nameCheck.info[2:]))
+						if string(nameCheck.info[2:]) == "Code"{
+							ca.attribute_name_index=name_index
+							ca.attribute_length=length
+							ca.max_stack=d.bo.Uint16(info[0:2])
+							ca.max_locals=d.bo.Uint16(info[2:4])
+							ca.code_length=d.bo.Uint32(info[4:8])
+
+							ca.code=info[8:8+ca.code_length]
+							fmt.Printf("%x\n",ca.code)
+
+
+
+			/*				ca := make([]code_attribute, length)
+				for k := uint16(0); k < ca.attributes_count; k++ {
+					var (
+						attribute_name_index	uint16
+    					attribute_length		uint32
+    					max_stack				uint16
+    					max_locals				uint16
+    					code_length				uint32
+  				  		exception_table_length 	uint16
+   				 		attributes_count 		uint16
+   				 		//attributes 				[]attribute_info 
+   				 	) 
+					binary.Read(d.file, d.bo, &attribute_name_index)
+					binary.Read(d.file, d.bo, &attribute_length)
+					binary.Read(d.file, d.bo, &max_stack)
+					binary.Read(d.file, d.bo, &max_locals)
+					binary.Read(d.file, d.bo, &code_length)
+						codes:=make([]uint8,code_length)
+					binary.Read(d.file, d.bo, codes)
+					binary.Read(d.file, d.bo, &exception_table_length)
+						excep := make([]exception_table,exception_table_length)//array
+						binary.Read(d.file, d.bo, excep)
+					binary.Read(d.file, d.bo, &attributes_count)
+						info := make([]attribute_info, attributes_count)
+						binary.Read(d.file, d.bo, info)
+					ca.attributes[k]=code_attribute{attribute_name_index:attribute_name_index,attribute_length:attribute_length,max_stack:max_stack,max_locals:max_locals,code_length:code_length,code:codes,exception_table_length:exception_table_length,exception_tables:excep,attributes_count:attributes_count,attributes:info}
+					fmt.Println("Code Length: ",code_length)
+					
+					fmt.Printf("Code: %x\n",codes)
+
+				} */
+						}
+
+					}	
+				/*	
 				mi.attributes = make([]code_attribute, mi.attributes_count)
 				for j := uint16(0); j < mi.attributes_count; j++ {
 					var (
@@ -393,6 +464,7 @@ func (d *decoder) readMethod() {
 					fmt.Printf("Code: %x\n",codes)
 
 				} 	
+				*/
 				/* Nut Method
 				mi.attributes = make([]attribute_info, mi.attributes_count)
 					for j := uint16(0); j < mi.attributes_count; j++ {
@@ -404,6 +476,7 @@ func (d *decoder) readMethod() {
 						binary.Read(d.file, d.bo, &info)
 					}
 				end of nut's method*/ 
+
 			
 	}	/*
 		for k:=uint16(0) ;k<d.cf.method_count ;k++{
@@ -422,7 +495,6 @@ func (d *decoder) readMethod() {
 			fmt.Println(string(metname.info[2:]),string(metdes.info[2:])) 
        	}*/
 }    	
-
 func (d *decoder) readAttribute() {
 		binary.Read(d.file, d.bo, &(d.cf.attributes_count))
 		fmt.Printf("attribute count : %d\n", d.cf.attributes_count)
