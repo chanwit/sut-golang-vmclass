@@ -43,6 +43,215 @@ const(		//ACC_PUBLIC 	= 0x0001
 		ACC_SYNTHETIC 	= 0x1000 	
 		ACC_ENUM 	= 0x4000
 )
+const(
+		nop				= iota	
+		aconst_null					
+		iconst_m1					
+		iconst_0					
+		iconst_1					
+		iconst_2					
+		iconst_3					
+		iconst_4					
+		iconst_5					
+		lconst_0					
+		lconst_1					
+		fconst_0					
+		fconst_1					
+		fconst_2					
+		dconst_0					
+		dconst_1					
+		bipush						
+		sipush						
+		ldc							
+		ldc_w						
+		ldc2_w						
+		iload						
+		lload						
+		fload						
+		dload						
+		aload						
+		iload_0						
+		iload_1						
+		iload_2						
+		iload_3						
+		lload_0						
+		lload_1						
+		lload_2						
+		lload_3						
+		fload_0						
+		fload_1						
+		fload_2						
+		fload_3						
+		dload_0						
+		dload_1						
+		dload_2						
+		dload_3						
+		aload_0						
+		aload_1						
+		aload_2						
+		aload_3						
+		iaload						
+		laload						
+		faload						
+		daload						
+		aaload						
+		baload						
+		caload						
+		saload						
+		istore						
+		lstore						
+		fstore						
+		dstore						
+		astore						
+		istore_0					
+		istore_1					
+		istore_2					
+		istore_3					
+		lstore_0					
+		lstore_1					
+		lstore_2					
+		lstore_3					
+		fstore_0					
+		fstore_1					
+		fstore_2					
+		fstore_3					
+		dstore_0					
+		dstore_1					
+		dstore_2					
+		dstore_3					
+		astore_0					
+		astore_1					
+		astore_2					
+		astore_3					
+		iastore						
+		lastore						
+		fastore						
+		dastore						
+		aastore						
+		bastore						
+		castore						
+		sastore						
+		pop							
+		pop2						
+		dup							
+		dup_x1						
+		dup_x2						 
+		dup2						
+		dup2_x1						
+		dup2_x2						
+		swap						
+		iadd						
+		ladd						
+		fadd						
+		dadd						
+		isub						
+		lsub						
+		fsub						
+		dsub						
+		imul						
+		lmul						
+		fmul						
+		dmul						
+		idiv						
+		ldiv						
+		fdiv						
+		ddiv						
+		irem						
+		lrem						
+		frem						
+		drem						
+		ineg						
+		lneg						
+		fneg						
+		dneg						
+		ishl						
+		lshl						
+		ishr						
+		lshr						
+		iushr						
+		lushr						
+		iand						
+		land						
+		ior							
+		lor							
+		ixor						
+		lxor						
+		iinc						
+		i2l							
+		i2f							
+		i2d							
+		l2i							
+		l2f							
+		l2d							
+		f2i							
+		f2l							
+		f2d							
+		d2i							
+		d2l							
+		d2f							
+		i2b							
+		i2c							
+		i2s							
+		lcmp						
+		fcmpl						
+		fcmpg						
+		dcmpl						
+		dcmpg						
+		ifeq						
+		ifne						
+		iflt						
+		ifge						
+		ifgt						
+		ifle						
+		if_icmpeq					
+		if_icmpne					
+		if_icmplt					
+		if_icmpge					
+		if_icmpgt					
+		if_icmple					
+		if_acmpeq					
+		if_acmpne					
+		Goto						
+		jsr							
+		ret							
+		tableswitch					
+		lookupswitch				
+		ireturn						
+		lreturn						
+		freturn						
+		dreturn						
+		areturn						
+		Return						
+		getstatic					
+		putstatic					
+		getfield					
+		putfield					
+		invokevirtual				
+		invokespecial				
+		invokestatic				
+		invokeinterface			
+		invokedynamic				
+		new							
+		newarray					
+		anewarray					
+		arraylength					
+		athrow						
+		checkcast					
+		instanceof					
+		monitorenter				
+		monitorexit					
+		wide												
+		multianewarray				
+		ifnull						
+		ifnonnull					
+		goto_w						
+		jsr_w						
+		breakpoint					
+		no_name										
+		//(no name)					
+		impdep1						
+		impdep2						
+)
 type cp_info struct{
 	tag		uint8
 	info 	[]uint8
@@ -167,20 +376,20 @@ type CONSTANT_InvokeDynamic_info struct{
 }
 
 
-const (		CONSTANT_Class				=	7
+const (	CONSTANT_Class				=	7
 		CONSTANT_Fieldref			=	9
 		CONSTANT_Methodref			=	10
-		CONSTANT_InterfaceMethodref		=	11
+		CONSTANT_InterfaceMethodref	=	11
 		CONSTANT_String				=	8
 		CONSTANT_Integer			=	3
 		CONSTANT_Float				=	4
 		CONSTANT_Long				=	5
 		CONSTANT_Double				=	6
-		CONSTANT_NameAndType			=	12
+		CONSTANT_NameAndType		=	12
 		CONSTANT_Utf8				=	1
-		CONSTANT_MethodHandle			=	15
+		CONSTANT_MethodHandle		=	15
 		CONSTANT_MethodType			=	16
-		CONSTANT_InvokeDynamic			=	18
+		CONSTANT_InvokeDynamic		=	18
 )
 type decoder struct{
 	file 	io.Reader
@@ -393,6 +602,9 @@ func (d *decoder) readMethod() {
 
 							ca.code=info[8:8+ca.code_length]
 							fmt.Printf("%x\n",ca.code)
+							d.lookupcode(ca.code,ca.code_length);
+
+							
 
 
 
@@ -494,7 +706,237 @@ func (d *decoder) readMethod() {
 					}
 			fmt.Println(string(metname.info[2:]),string(metdes.info[2:])) 
        	}*/
-}    	
+} 
+func (d *decoder) lookupcode(ca []uint8,length uint32) {
+   	//fmt.Printf("\n%x\n",ca[:1])
+   	var m = make(map[int]string)
+   	m[0]="nop"				
+	m[1]="aconst_null"
+	m[2]="iconst_m1"				
+	m[3]="iconst_0"					
+	m[4]="iconst_1"					
+	m[5]="iconst_2"					
+	m[6]="iconst_3"					
+	m[7]="iconst_4"					
+	m[8]="iconst_5"					
+	m[9]="lconst_0"					
+	m[10]="lconst_1"					
+	m[11]="fconst_0"				
+	m[12]="fconst_1"				
+	m[13]="fconst_2"				
+	m[14]="dconst_0"					
+	m[15]="dconst_1"					
+	m[16]="bipush"						
+	m[17]="sipush"						
+	m[18]="ldc"						
+	m[19]="ldc_w"						
+	m[20]="ldc2_w"						
+	m[21]="iload"						
+	m[22]="lload"						
+	m[23]="fload"						
+	m[24]="dload"						
+	m[25]="aload"						
+	m[26]="iload_0"						
+	m[27]="iload_1"						
+	m[28]="iload_2"						
+	m[29]="iload_3"						
+	m[30]="lload_0"						
+	m[31]="lload_1"						
+	m[32]="lload_2"						
+	m[33]="lload_3"						
+	m[34]="fload_0"						
+	m[35]="fload_1"						
+	m[36]="fload_2"						
+	m[37]="fload_3"						
+	m[38]="dload_0"						
+	m[39]="dload_1"						
+	m[40]="dload_2"						
+	m[41]="dload_3"						
+	m[42]="aload_0"						
+	m[43]="aload_1"						
+	m[44]="aload_2"						
+	m[45]="aload_3"						
+	m[46]="iaload"					
+	m[47]="laload"						
+	m[48]="faload"						
+	m[49]="daload"						
+	m[50]="aaload"						
+	m[51]="baload"						
+	m[52]="caload"						
+	m[53]="saload"						
+	m[54]="istore"						
+	m[55]="lstore"						
+	m[56]="fstore"						
+	m[57]="dstore"						
+	m[58]="astore"						
+	m[59]="istore_0"					
+	m[60]="istore_1"					
+	m[61]="istore_2"					
+	m[62]="istore_3"					
+	m[63]="lstore_0"					
+	m[64]="lstore_1"					
+	m[65]="lstore_2"					
+	m[66]="lstore_3"					
+	m[67]="fstore_0"					
+	m[68]="fstore_1"					
+	m[69]="fstore_2"					
+	m[70]="fstore_3"					
+	m[71]="dstore_0"					
+	m[72]="dstore_1"					
+	m[73]="dstore_2"					
+	m[74]="dstore_3"					
+	m[75]="astore_0"					
+	m[76]="astore_1"					
+	m[77]="astore_2"					
+	m[78]="astore_3"					
+	m[79]="iastore"						
+	m[80]="lastore"						
+	m[81]="fastore"						
+	m[82]="dastore"						
+	m[83]="aastore"						
+	m[84]="bastore"						
+	m[85]="castore"						
+	m[86]="sastore"						
+	m[87]="pop"						
+	m[88]="pop2"						
+	m[89]="dup"							
+	m[90]="dup_x1"						
+	m[91]="dup_x2"						 
+	m[92]="dup2"						
+	m[93]="dup2_x1"						
+	m[94]="dup2_x2"						
+	m[95]="swap"						
+	m[96]="iadd"						
+	m[97]="ladd"						
+	m[98]="fadd"						
+	m[99]="dadd"						
+	m[100]="isub"						
+	m[101]="lsub"						
+	m[102]="fsub"						
+	m[103]="dsub"						
+	m[104]="imul"						
+	m[105]="lmul"						
+	m[106]="fmul"						
+	m[107]="dmul"						
+	m[108]="idiv"						
+	m[109]="ldiv"						
+	m[110]="fdiv"						
+	m[111]="ddiv"						
+	m[112]="irem"						
+	m[113]="lrem"						
+	m[114]="frem"						
+	m[115]="drem"						
+	m[116]="ineg"						
+	m[117]="lneg"						
+	m[118]="fneg"						
+	m[119]="dneg"						
+	m[120]="ishl"						
+	m[121]="lshl"						
+	m[122]="ishr"						
+	m[123]="lshr"						
+	m[124]="iushr"						
+	m[125]="lushr"						
+	m[126]="iand"						
+	m[127]="land"						
+	m[128]="ior"							
+	m[129]="lor"							
+	m[130]="ixor"						
+	m[131]="lxor"						
+	m[132]="iinc"						
+	m[133]="i2l"							
+	m[134]="i2f"							
+	m[135]="i2d"							
+	m[136]="l2i"							
+	m[137]="l2f"							
+	m[138]="l2d"							
+	m[139]="f2i"							
+	m[140]="f2l"							
+	m[141]="f2d"							
+	m[142]="d2i"							
+	m[143]="d2l"							
+	m[144]="d2f"							
+	m[145]="i2b"							
+	m[146]="i2c"							
+	m[147]="i2s"							
+	m[148]="lcmp"						
+	m[149]="fcmpl"						
+	m[150]="fcmpg"						
+	m[151]="dcmpl"						
+	m[152]="dcmpg"						
+	m[153]="ifeq"					
+	m[154]="ifne"						
+	m[155]="iflt"						
+	m[156]="ifge"						
+	m[157]="ifgt"						
+	m[158]="ifle"						
+	m[159]="if_icmpeq"					
+	m[160]="if_icmpne"					
+	m[161]="if_icmplt"					
+	m[162]="if_icmpge"					
+	m[163]="if_icmpgt"					
+	m[164]="if_icmple"					
+	m[165]="if_acmpeq"					
+	m[166]="if_acmpne"					
+	m[167]="Goto"						
+	m[168]="jsr"							
+	m[169]="ret"							
+	m[170]="tableswitch"					
+	m[171]="lookupswitch"				
+	m[172]="ireturn"
+	m[173]="lreturn"						
+	m[174]="freturn"						
+	m[175]="dreturn"						
+	m[176]="areturn"						
+	m[177]="Return"					
+	m[178]="getstatic"					
+	m[179]="putstatic"					
+	m[180]="getfield"					
+	m[181]="putfield"					
+	m[182]="invokevirtual"				
+	m[183]="invokespecial"				
+	m[184]="invokestatic"				
+	m[185]="invokeinterface"			
+	m[186]="invokedynamic"				
+	m[187]="new"							
+	m[188]="newarray"					
+	m[189]="anewarray"					
+	m[190]="arraylength"					
+	m[191]="athrow"						
+	m[192]="checkcast"					
+	m[193]="instanceof"					
+	m[194]="monitorenter"				
+	m[195]="monitorexit"					
+	m[196]="wide"												
+	m[197]="multianewarray"				
+	m[198]="ifnull"						
+	m[199]="ifnonnull"					
+	m[200]="goto_w"						
+	m[201]="jsr_w"						
+	m[202]="breakpoint"					
+for k:=203 ; k<254; k++{
+	m[k]="noname"
+}														
+	m[254]="impdep1"						
+	m[255]="impdep2"			
+			
+for j:=uint32(0) ;j<length ;j++{
+	t := ca[j:j+1]
+	s := make([]interface{}, len(t))
+	for i, v := range t {
+		s[i]=v
+		value,present:=m[int(v)]
+		
+			fmt.Println(j,": ",value,present)
+   		
+	}
+}
+   		
+   		
+   		
+   
+   		
+ }
+
 func (d *decoder) readAttribute() {
 		binary.Read(d.file, d.bo, &(d.cf.attributes_count))
 		fmt.Printf("attribute count : %d\n", d.cf.attributes_count)
