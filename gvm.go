@@ -43,215 +43,7 @@ const(		//ACC_PUBLIC 	= 0x0001
 		ACC_SYNTHETIC 	= 0x1000 	
 		ACC_ENUM 	= 0x4000
 )
-const(
-		nop				= iota	
-		aconst_null					
-		iconst_m1					
-		iconst_0					
-		iconst_1					
-		iconst_2					
-		iconst_3					
-		iconst_4					
-		iconst_5					
-		lconst_0					
-		lconst_1					
-		fconst_0					
-		fconst_1					
-		fconst_2					
-		dconst_0					
-		dconst_1					
-		bipush						
-		sipush						
-		ldc							
-		ldc_w						
-		ldc2_w						
-		iload						
-		lload						
-		fload						
-		dload						
-		aload						
-		iload_0						
-		iload_1						
-		iload_2						
-		iload_3						
-		lload_0						
-		lload_1						
-		lload_2						
-		lload_3						
-		fload_0						
-		fload_1						
-		fload_2						
-		fload_3						
-		dload_0						
-		dload_1						
-		dload_2						
-		dload_3						
-		aload_0						
-		aload_1						
-		aload_2						
-		aload_3						
-		iaload						
-		laload						
-		faload						
-		daload						
-		aaload						
-		baload						
-		caload						
-		saload						
-		istore						
-		lstore						
-		fstore						
-		dstore						
-		astore						
-		istore_0					
-		istore_1					
-		istore_2					
-		istore_3					
-		lstore_0					
-		lstore_1					
-		lstore_2					
-		lstore_3					
-		fstore_0					
-		fstore_1					
-		fstore_2					
-		fstore_3					
-		dstore_0					
-		dstore_1					
-		dstore_2					
-		dstore_3					
-		astore_0					
-		astore_1					
-		astore_2					
-		astore_3					
-		iastore						
-		lastore						
-		fastore						
-		dastore						
-		aastore						
-		bastore						
-		castore						
-		sastore						
-		pop							
-		pop2						
-		dup							
-		dup_x1						
-		dup_x2						 
-		dup2						
-		dup2_x1						
-		dup2_x2						
-		swap						
-		iadd						
-		ladd						
-		fadd						
-		dadd						
-		isub						
-		lsub						
-		fsub						
-		dsub						
-		imul						
-		lmul						
-		fmul						
-		dmul						
-		idiv						
-		ldiv						
-		fdiv						
-		ddiv						
-		irem						
-		lrem						
-		frem						
-		drem						
-		ineg						
-		lneg						
-		fneg						
-		dneg						
-		ishl						
-		lshl						
-		ishr						
-		lshr						
-		iushr						
-		lushr						
-		iand						
-		land						
-		ior							
-		lor							
-		ixor						
-		lxor						
-		iinc						
-		i2l							
-		i2f							
-		i2d							
-		l2i							
-		l2f							
-		l2d							
-		f2i							
-		f2l							
-		f2d							
-		d2i							
-		d2l							
-		d2f							
-		i2b							
-		i2c							
-		i2s							
-		lcmp						
-		fcmpl						
-		fcmpg						
-		dcmpl						
-		dcmpg						
-		ifeq						
-		ifne						
-		iflt						
-		ifge						
-		ifgt						
-		ifle						
-		if_icmpeq					
-		if_icmpne					
-		if_icmplt					
-		if_icmpge					
-		if_icmpgt					
-		if_icmple					
-		if_acmpeq					
-		if_acmpne					
-		Goto						
-		jsr							
-		ret							
-		tableswitch					
-		lookupswitch				
-		ireturn						
-		lreturn						
-		freturn						
-		dreturn						
-		areturn						
-		Return						
-		getstatic					
-		putstatic					
-		getfield					
-		putfield					
-		invokevirtual				
-		invokespecial				
-		invokestatic				
-		invokeinterface			
-		invokedynamic				
-		new							
-		newarray					
-		anewarray					
-		arraylength					
-		athrow						
-		checkcast					
-		instanceof					
-		monitorenter				
-		monitorexit					
-		wide												
-		multianewarray				
-		ifnull						
-		ifnonnull					
-		goto_w						
-		jsr_w						
-		breakpoint					
-		no_name										
-		//(no name)					
-		impdep1						
-		impdep2						
-)
+
 type cp_info struct{
 	tag		uint8
 	info 	[]uint8
@@ -480,15 +272,12 @@ func (d *decoder) readThis() {
 	fmt.Println("\nthis_class is "+string(d.cf.constant_pool[(d.bo.Uint16(thisc.info))].info[2:]))
 
 	binary.Read(d.file,d.bo,&(d.cf.super_class))
-	thiss := d.cf.constant_pool[d.cf.super_class]
-	fmt.Println("super_class is "+string(d.cf.constant_pool[(d.bo.Uint16(thiss.info))].info[2:]))
+	//thiss := d.cf.constant_pool[d.cf.super_class]
+	//fmt.Println("super_class is "+string(d.cf.constant_pool[(d.bo.Uint16(thiss.info))].info[2:]))
 
 }
 func (d *decoder) readInterface() {
 	binary.Read(d.file,d.bo,&(d.cf.interfaces_count))
-	fmt.Println(d.cf.interfaces_count)
-	
-	
 	d.cf.interfaces = make([]uint16 , d.cf.interfaces_count)
 	
 
@@ -567,9 +356,9 @@ func (d *decoder) readMethod() {
 		binary.Read(d.file, d.bo, &mi.name_index)
 		binary.Read(d.file, d.bo, &mi.descriptor_index)
 		binary.Read(d.file, d.bo, &mi.attributes_count)
-		fmt.Println("method detail: ",mi.access_flags, mi.name_index, mi.descriptor_index, mi.attributes_count)
+	//	fmt.Println("method detail: ",mi.access_flags, mi.name_index, mi.descriptor_index, mi.attributes_count)
 		d.cf.method[i]=method_info{access_flags:mi.access_flags, name_index:mi.name_index, descriptor_index:mi.descriptor_index, attributes_count:mi.attributes_count}			
-		/*	metname := d.cf.constant_pool[mi.name_index]
+			metname := d.cf.constant_pool[mi.name_index]
 			metdes := d.cf.constant_pool[mi.descriptor_index]
 			if mi.access_flags & ACC_PUBLIC == ACC_PUBLIC {
 						fmt.Print("public ")
@@ -581,7 +370,7 @@ func (d *decoder) readMethod() {
 						fmt.Print("protected ")
 					}
 			fmt.Println(string(metname.info[2:]),string(metdes.info[2:])) 
-		*/
+		
 			mi.attributes = make([]attribute_info, mi.attributes_count)
 					for j := uint16(0); j < mi.attributes_count; j++ {
 						var name_index uint16
@@ -924,10 +713,13 @@ for j:=uint32(0) ;j<length ;j++{
 	s := make([]interface{}, len(t))
 	for i, v := range t {
 		s[i]=v
-		value,present:=m[int(v)]
-		
-			fmt.Println(j,": ",value,present)
-   		
+		value,_:=m[int(v)]
+		if int(v)==183{
+			fmt.Println(j,": ",value)
+			j=j+2
+		}else{
+			fmt.Println(j,": ",value)
+   		}
 	}
 }
    		
