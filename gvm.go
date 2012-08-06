@@ -141,8 +141,8 @@ type CONSTANT_Double_info struct{
 }
 
 type CONSTANT_NameAndType_info struct{
-    tag			uint8
-    name_index 		uint16
+    tag					uint8
+    name_index 			uint16
     descriptor_index	uint16
 }
 
@@ -222,10 +222,16 @@ func (d *decoder) readConstantPool() {
 				info := make([]byte, 3)
 				binary.Read(d.file, d.bo, info)
 				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
-
+			case CONSTANT_NameAndType :fallthrough
+			/*	var nameindex 			uint16
+				var descriptorindex 	uint16
+				binary.Read(d.file, d.bo, &nameindex)
+				binary.Read(d.file, d.bo, &descriptorindex)
+				d.cf.constant_pool[i] = CONSTANT_NameAndType_info{ tag:tag, name_index:nameindex, descriptor_index:descriptorindex }
+			  */
 			case CONSTANT_Integer :fallthrough
 			case CONSTANT_Float :fallthrough
-			case CONSTANT_NameAndType :fallthrough
+			
 			case CONSTANT_Fieldref :fallthrough
 			case CONSTANT_Methodref :fallthrough
 			case CONSTANT_InterfaceMethodref :fallthrough
@@ -272,8 +278,8 @@ func (d *decoder) readThis() {
 	fmt.Println("\nthis_class is "+string(d.cf.constant_pool[(d.bo.Uint16(thisc.info))].info[2:]))
 
 	binary.Read(d.file,d.bo,&(d.cf.super_class))
-	//thiss := d.cf.constant_pool[d.cf.super_class]
-	//fmt.Println("super_class is "+string(d.cf.constant_pool[(d.bo.Uint16(thiss.info))].info[2:]))
+	thiss := d.cf.constant_pool[d.cf.super_class]
+	fmt.Println("super_class is "+string(d.cf.constant_pool[(d.bo.Uint16(thiss.info))].info[2:]))
 
 }
 func (d *decoder) readInterface() {
@@ -286,14 +292,12 @@ func (d *decoder) readInterface() {
 		inter := d.cf.constant_pool[d.cf.interfaces[i]]
 		fmt.Printf("interface = ")
 		fmt.Println(string(d.cf.constant_pool[(d.bo.Uint16(inter.info))].info[2:]))
-
-
 	}
 }
 
 func (d *decoder) readField() {
 		binary.Read(d.file, d.bo, &(d.cf.fields_count))
-		fmt.Printf("field count : %d\n", d.cf.fields_count)
+		//fmt.Printf("field count : %d\n", d.cf.fields_count)
 		d.cf.fields = make([]field_info, d.cf.fields_count)
 		for i := uint16(0); i < d.cf.fields_count; i++ {
 			var fi field_info
@@ -303,17 +307,39 @@ func (d *decoder) readField() {
 				binary.Read(d.file, d.bo, &fi.descriptor_index)
 				binary.Read(d.file, d.bo, &fi.attributes_count)
 			d.cf.fields[i]=field_info{access_flags:fi.access_flags,name_index:fi.name_index,descriptor_index:fi.descriptor_index,attributes_count:fi.attributes_count}
-			
+				//Access_flags and FieldName Print!
+				fieldname := d.cf.constant_pool[fi.name_index]
+				fielddes := d.cf.constant_pool[fi.descriptor_index]
+					if fi.access_flags & ACC_PUBLIC == ACC_PUBLIC {
+						fmt.Print("public ")
+					}
+					if fi.access_flags & ACC_PRIVATE == ACC_PRIVATE{
+						fmt.Print("private ")
+					}
+					if fi.access_flags & ACC_PROTECTED == ACC_PROTECTED{
+						fmt.Print("protected ")
+					}
 
+				fmt.Println(string(fieldname.info[2:]),string(fielddes.info[2:])) 
+				//
+			
 			fi.attributes = make([]attribute_info, fi.attributes_count)
 					for j := uint16(0); j < fi.attributes_count; j++ {
 						var name_index uint16
 						var length uint32
+						var cv constantValue_attribute
 						binary.Read(d.file, d.bo, &name_index)
 						binary.Read(d.file, d.bo, &length)
 						info := make([]uint8, length)
 						binary.Read(d.file, d.bo, &info)
-					}
+					
+							nameCheck:=d.cf.constant_pool[name_index]
+						//	fmt.Println(string(nameCheck.info[2:]))
+								if string(nameCheck.info[2:]) == "ConstantValue"{
+									cv.attribute_name_index = name_index
+									cv.attribute_length = length
+									fmt.Println(string(cv.attribute_name_index))
+									//cv.constantvalue_index =  
 /*
 			fi.attributes = make([]constantValue_attribute, fi.attributes_count)
 			for k := uint16(0); k < fi.attributes_count; k++ {
@@ -346,6 +372,8 @@ func (d *decoder) readField() {
        	}*/
 }
 }
+}
+}
 func (d *decoder) readMethod() {
 	binary.Read(d.file, d.bo, &(d.cf.method_count))
 	fmt.Printf("method count : %d\n", d.cf.method_count)
@@ -360,7 +388,7 @@ func (d *decoder) readMethod() {
 		d.cf.method[i]=method_info{access_flags:mi.access_flags, name_index:mi.name_index, descriptor_index:mi.descriptor_index, attributes_count:mi.attributes_count}			
 			metname := d.cf.constant_pool[mi.name_index]
 			metdes := d.cf.constant_pool[mi.descriptor_index]
-			if mi.access_flags & ACC_PUBLIC == ACC_PUBLIC {
+					if mi.access_flags & ACC_PUBLIC == ACC_PUBLIC {
 						fmt.Print("public ")
 					}
 					if mi.access_flags & ACC_PRIVATE == ACC_PRIVATE{
@@ -376,125 +404,25 @@ func (d *decoder) readMethod() {
 						var name_index uint16
 						var length uint32
 						var ca code_attribute
+						//var exception_length uint16
 						binary.Read(d.file, d.bo, &name_index)
 						binary.Read(d.file, d.bo, &length)
 							info := make([]uint8, length)
 						binary.Read(d.file, d.bo, info)
-					nameCheck:=d.cf.constant_pool[name_index]
-					fmt.Println(string(nameCheck.info[2:]))
-						if string(nameCheck.info[2:]) == "Code"{
-							ca.attribute_name_index=name_index
-							ca.attribute_length=length
-							ca.max_stack=d.bo.Uint16(info[0:2])
-							ca.max_locals=d.bo.Uint16(info[2:4])
-							ca.code_length=d.bo.Uint32(info[4:8])
-
-							ca.code=info[8:8+ca.code_length]
-							fmt.Printf("%x\n",ca.code)
-							d.lookupcode(ca.code,ca.code_length);
-
-							
-
-
-
-			/*				ca := make([]code_attribute, length)
-				for k := uint16(0); k < ca.attributes_count; k++ {
-					var (
-						attribute_name_index	uint16
-    					attribute_length		uint32
-    					max_stack				uint16
-    					max_locals				uint16
-    					code_length				uint32
-  				  		exception_table_length 	uint16
-   				 		attributes_count 		uint16
-   				 		//attributes 				[]attribute_info 
-   				 	) 
-					binary.Read(d.file, d.bo, &attribute_name_index)
-					binary.Read(d.file, d.bo, &attribute_length)
-					binary.Read(d.file, d.bo, &max_stack)
-					binary.Read(d.file, d.bo, &max_locals)
-					binary.Read(d.file, d.bo, &code_length)
-						codes:=make([]uint8,code_length)
-					binary.Read(d.file, d.bo, codes)
-					binary.Read(d.file, d.bo, &exception_table_length)
-						excep := make([]exception_table,exception_table_length)//array
-						binary.Read(d.file, d.bo, excep)
-					binary.Read(d.file, d.bo, &attributes_count)
-						info := make([]attribute_info, attributes_count)
-						binary.Read(d.file, d.bo, info)
-					ca.attributes[k]=code_attribute{attribute_name_index:attribute_name_index,attribute_length:attribute_length,max_stack:max_stack,max_locals:max_locals,code_length:code_length,code:codes,exception_table_length:exception_table_length,exception_tables:excep,attributes_count:attributes_count,attributes:info}
-					fmt.Println("Code Length: ",code_length)
-					
-					fmt.Printf("Code: %x\n",codes)
-
-				} */
-						}
+							nameCheck:=d.cf.constant_pool[name_index]
+							fmt.Println(string(nameCheck.info[2:]))
+								if string(nameCheck.info[2:]) == "Code"{
+									ca.attribute_name_index=name_index
+									ca.attribute_length=length
+									ca.max_stack=d.bo.Uint16(info[0:2])
+									ca.max_locals=d.bo.Uint16(info[2:4])
+									ca.code_length=d.bo.Uint32(info[4:8])
+									ca.code=info[8:8+ca.code_length]
+									d.lookupcode(ca.code,ca.code_length);
+								}
 
 					}	
-				/*	
-				mi.attributes = make([]code_attribute, mi.attributes_count)
-				for j := uint16(0); j < mi.attributes_count; j++ {
-					var (
-						//ca 						code_attribute
-						attribute_name_index	uint16
-    					attribute_length		uint32
-    					max_stack				uint16
-    					max_locals				uint16
-    					code_length				uint32
-  				  		exception_table_length 	uint16
-    					//exception_table
-   				 		attributes_count 		uint16
-   				 		//attributes 				[]attribute_info 
-   				 	) 
-					binary.Read(d.file, d.bo, &attribute_name_index)
-					binary.Read(d.file, d.bo, &attribute_length)
-					binary.Read(d.file, d.bo, &max_stack)
-					binary.Read(d.file, d.bo, &max_locals)
-					binary.Read(d.file, d.bo, &code_length)
-						codes:=make([]uint8,code_length)
-					binary.Read(d.file, d.bo, codes)
-					binary.Read(d.file, d.bo, &exception_table_length)
-						excep := make([]exception_table,exception_table_length)//array
-						binary.Read(d.file, d.bo, excep)
-					binary.Read(d.file, d.bo, &attributes_count)
-						info := make([]attribute_info, attributes_count)
-						binary.Read(d.file, d.bo, info)
-					mi.attributes[j]=code_attribute{attribute_name_index:attribute_name_index,attribute_length:attribute_length,max_stack:max_stack,max_locals:max_locals,code_length:code_length,code:codes,exception_table_length:exception_table_length,exception_tables:excep,attributes_count:attributes_count,attributes:info}
-					fmt.Println("Code Length: ",code_length)
-					
-					fmt.Printf("Code: %x\n",codes)
-
-				} 	
-				*/
-				/* Nut Method
-				mi.attributes = make([]attribute_info, mi.attributes_count)
-					for j := uint16(0); j < mi.attributes_count; j++ {
-						var name_index uint16
-						var length uint32
-						binary.Read(d.file, d.bo, &name_index)
-						binary.Read(d.file, d.bo, &length)
-						info := make([]uint8, length)
-						binary.Read(d.file, d.bo, &info)
-					}
-				end of nut's method*/ 
-
-			
-	}	/*
-		for k:=uint16(0) ;k<d.cf.method_count ;k++{
-			mi:=d.cf.method[k]
-			metname := d.cf.constant_pool[mi.name_index]
-			metdes := d.cf.constant_pool[mi.descriptor_index]
-			if mi.access_flags & ACC_PUBLIC == ACC_PUBLIC {
-						fmt.Print("public ")
-					}
-					if mi.access_flags & ACC_PRIVATE == ACC_PRIVATE{
-						fmt.Print("private ")
-					}
-					if mi.access_flags & ACC_PROTECTED == ACC_PROTECTED{
-						fmt.Print("protected ")
-					}
-			fmt.Println(string(metname.info[2:]),string(metdes.info[2:])) 
-       	}*/
+	}	
 } 
 func (d *decoder) lookupcode(ca []uint8,length uint32) {
    	//fmt.Printf("\n%x\n",ca[:1])
@@ -707,18 +635,27 @@ for k:=203 ; k<254; k++{
 }														
 	m[254]="impdep1"						
 	m[255]="impdep2"			
-			
+	checkTank := 0		
 for j:=uint32(0) ;j<length ;j++{
-	t := ca[j:j+1]
-	s := make([]interface{}, len(t))
-	for i, v := range t {
-		s[i]=v
-		value,_:=m[int(v)]
-		if int(v)==183{
-			fmt.Println(j,": ",value)
-			j=j+2
-		}else{
-			fmt.Println(j,": ",value)
+	if checkTank>0{
+		keepindex := ca[j:j+2]
+		 checkTank=0
+		 j=j+1
+		 fmt.Println("keepindex : = ",keepindex)
+	}else{
+		t := ca[j:j+1]
+		s := make([]interface{}, len(t))
+		for i, v := range t {
+			s[i]=v
+			value,_:=m[int(v)]
+		//=====================Group 2 Bytes Index.=========================
+			 if (int(v)==183)||(int(v)==181){ //invokespecial next 2 bytes will be indexes of Constant pool table.
+				fmt.Println(j,": ",value)
+				checkTank=1
+			}else{
+				fmt.Println(j,": ",value)
+				checkTank=0
+   			}
    		}
 	}
 }
@@ -745,6 +682,7 @@ func (d *decoder) readAttribute() {
 					fmt.Println(att, string(att.info[2:]))
 		}
 }
+
 		 	
 		
 func checkSize(f *os.File) (){
