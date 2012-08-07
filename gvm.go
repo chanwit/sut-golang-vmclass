@@ -1159,7 +1159,7 @@ func (d *decoder) readAttribute() {
 
 func readSize(f *os.File) {
 	state,_:=f.Stat()
-	fmt.Printf("size = %d bytes\n", state.Size())
+	fmt.Printf("size %d bytes\n", state.Size())
 }
 
 func readFile(fileClass string, cf *classFile) {
@@ -1199,6 +1199,113 @@ func findMethod(name string, cf *classFile) (ca code_attribute) {
 	return
 }
 
+type stack struct {
+	data		[]uint32
+	tos			int
+}
+
+func (s *stack) init(size int) {
+	s.data = make([]uint32, size)
+	s.tos = -1
+}
+
+func (s *stack) push(num uint32) {
+	s.tos++
+	s.data[s.tos] = num
+}
+
+func (s *stack) pop() (num uint32) {
+	num = s.data[s.tos]
+	s.tos--
+	return
+}
+
+func execute(ca code_attribute, cf *classFile) {
+	s := &stack{}
+	s.init(int(ca.max_stack))
+	locals := make([]uint32, ca.max_locals)
+	code := ca.code
+	pc := 0
+
+	for {
+		op := code[pc]
+		switch op {
+			case iconst_1 :
+				s.push(1)
+				pc++
+			case iconst_2 :
+				s.push(2)
+				pc++
+			case iconst_3 :
+				s.push(3)
+				pc++
+			case iconst_4 :
+				s.push(4)
+				pc++
+			case iconst_5 :
+				s.push(5)
+				pc++
+			case istore_1 :
+				locals[1] = s.pop()
+				pc++
+			case istore_2 :
+				locals[2] = s.pop()
+				pc++
+			case istore_3 :
+				locals[3] = s.pop()
+				pc++
+			case iload_1 :
+				s.push(locals[1])
+				pc++
+			case iload_2 :
+				s.push(locals[2])
+				pc++
+			case iload_3 :
+				s.push(locals[3])
+				pc++
+			case bipush :
+				s.push(uint32(code[pc+1]))
+				pc = pc + 2
+			case iadd :
+				o1 := s.pop()
+				o2 := s.pop()
+				result := o2+o1
+				s.push(result)
+				pc++
+			case isub :
+				o1 := s.pop()
+				o2 := s.pop()
+				result := o2-o1
+				s.push(result)
+				pc++
+			case imul :
+				o1 := s.pop()
+				o2 := s.pop()
+				result := o2*o1
+				s.push(result)
+				pc++
+			case idiv :
+				o1 := s.pop()
+				o2 := s.pop()
+				result := o2/o1
+				s.push(result)
+				pc++
+			case return_x :
+				fmt.Println(locals)
+				pc++
+				return
+			//case invokevirtual :
+			//	pc++
+			//	ib1 := code[pc]
+			//	pc++
+			//	ib2 := code[pc]
+			//	ib := (ib1 << 8) + ib2
+			//	cf.constant_pool[ib]
+			//case getstatic :
+		}
+	}
+}
+
 func main() {
 
 	cf := &classFile{}
@@ -1216,7 +1323,8 @@ func main() {
 		//execute (ca.code)
 
 		ca := findMethod("main",cf)
-		fmt.Println(ca)
+		fmt.Println(ca.code)
+		execute(ca, cf)
 
 		//fmt.Println(cf.methods[1].attributes[0])
 	}
