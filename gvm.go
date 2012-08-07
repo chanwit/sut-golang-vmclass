@@ -7,6 +7,7 @@ import ( "fmt"
 		"encoding/binary"
 		//"bytes"
 )
+
 type classfile struct{
 	magic 									uint32
 	minor_version 							uint16
@@ -65,7 +66,7 @@ type method_info struct {
 	name_index 			uint16
 	descriptor_index 	uint16
 	attributes_count 	uint16
-	attributes 			[]attribute_info
+	attributes 			[]code_attribute
 }
 type code_attribute struct{
     attribute_name_index	uint16
@@ -75,9 +76,9 @@ type code_attribute struct{
     code_length				uint32
     code					[]uint8
  	exception_table_length 	uint16
-    exception_tables		[]exception_table
+    exception				[]exception_table
     attributes_count 		uint16
-    attributes 				[]attribute_info
+    line_number_table_att   []LineNumberTable_attribute
 }
 type exception_table struct{
 	start_pc	uint16
@@ -89,6 +90,16 @@ type attribute_info struct{
     attribute_name_index	uint16
     attribute_length		uint32
     info					[]uint8	//[attribute_length]
+}
+type LineNumberTable_attribute struct {
+    attribute_name_index		uint16
+    attribute_length			uint32
+    line_number_table_length 	uint16
+    line_number_tables			[]line_number_table
+}
+type  line_number_table struct{
+	start_pc			uint16
+    line_number 		uint16	
 }
 
 type CONSTANT_Class_info struct{
@@ -385,7 +396,12 @@ func (d *decoder) readMethod() {
 		binary.Read(d.file, d.bo, &mi.descriptor_index)
 		binary.Read(d.file, d.bo, &mi.attributes_count)
 	//	fmt.Println("method detail: ",mi.access_flags, mi.name_index, mi.descriptor_index, mi.attributes_count)
-		d.cf.method[i]=method_info{access_flags:mi.access_flags, name_index:mi.name_index, descriptor_index:mi.descriptor_index, attributes_count:mi.attributes_count}			
+		d.cf.method[i]=method_info{
+			access_flags:mi.access_flags,
+			name_index:mi.name_index,
+			descriptor_index:mi.descriptor_index,
+			attributes_count:mi.attributes_count }	
+
 			metname := d.cf.constant_pool[mi.name_index]
 			metdes := d.cf.constant_pool[mi.descriptor_index]
 					if mi.access_flags & ACC_PUBLIC == ACC_PUBLIC {
@@ -399,12 +415,12 @@ func (d *decoder) readMethod() {
 					}
 			fmt.Println(string(metname.info[2:]),string(metdes.info[2:])) 
 		
-			mi.attributes = make([]attribute_info, mi.attributes_count)
+			d.cf.method[i].attributes = make([]code_attribute, mi.attributes_count)
 					for j := uint16(0); j < mi.attributes_count; j++ {
 						var name_index uint16
 						var length uint32
 						var ca code_attribute
-						//var exception_length uint16
+						//var excep_length uint16
 						binary.Read(d.file, d.bo, &name_index)
 						binary.Read(d.file, d.bo, &length)
 							info := make([]uint8, length)
@@ -418,12 +434,126 @@ func (d *decoder) readMethod() {
 									ca.max_locals=d.bo.Uint16(info[2:4])
 									ca.code_length=d.bo.Uint32(info[4:8])
 									ca.code=info[8:8+ca.code_length]
-									d.lookupcode(ca.code,ca.code_length);
-								}
+									d.lookupcode(ca.code,ca.code_length)
 
+									ca.exception_table_length = d.bo.Uint16(info[8+ca.code_length:10+ca.code_length])
+									d.cf.method[i].attributes[j].exception = make([]exception_table, ca.exception_table_length)
+        								for l := uint16(0); l < ca.exception_table_length; l++ {
+        									var start_pc uint16
+        									var end_pc  uint16
+        									var handler_pc  uint16
+        									var catch_type  uint16
+        									start_pc = d.bo.Uint16(info[10+ca.code_length:12+ca.code_length])
+        									end_pc = d.bo.Uint16(info[12+ca.code_length:14+ca.code_length])
+        									handler_pc = d.bo.Uint16(info[14+ca.code_length:16+ca.code_length])
+        									catch_type = d.bo.Uint16(info[16+ca.code_length:18+ca.code_length])
+        								d.cf.method[i].attributes[j].exception[l] = exception_table {
+        									start_pc:start_pc,
+        									end_pc:end_pc,
+        									handler_pc:handler_pc,
+        									catch_type:catch_type}
+        									fmt.Println(start_pc, end_pc, handler_pc, catch_type)
+        								}
+        							index := uint16(ca.code_length) + ca.exception_table_length
+        							ca.attributes_count = d.bo.Uint16(info[index+10:index+12])
+        							d.cf.method[i].attributes[j].line_number_table_att = make([]LineNumberTable_attribute, ca.attributes_count)
+									var lnt_a LineNumberTable_attribute
+										for m := uint16(0); m < ca.attributes_count; m++ {
+											var name_index uint16
+											var length uint32
+											name_index = d.bo.Uint16(info[index+12:index+14])
+											length = d.bo.Uint32(info[index+14:index+18])
+											lnt_a.attribute_name_index = name_index
+											lnt_a.attribute_length = length
+											lnt_a.line_number_table_length = d.bo.Uint16(info[index+18:index+20])
+											lnt_a.line_number_tables = make([]line_number_table, lnt_a.line_number_table_length)
+											fmt.Println(" ", string(d.cf.constant_pool[name_index].info[2:]), ":")
+										d.cf.method[i].attributes[j].line_number_table_att[m].line_number_tables = make([]line_number_table, lnt_a.line_number_table_length)
+											for o := uint16(0); o < lnt_a.line_number_table_length; o++ {
+												var start_pc uint16
+												var line_number uint16
+												start_pc = d.bo.Uint16(info[index+20+(o*4):index+22+(o*4)])
+												line_number = d.bo.Uint16(info[index+22+(o*4):index+24+(o*4)])
+							
+											d.cf.method[i].attributes[j].line_number_table_att[m].line_number_tables[o] = line_number_table {start_pc:start_pc, line_number:line_number}
+											fmt.Println(" line",line_number,":", start_pc)
+											}
+							
+										d.cf.method[i].attributes[j].line_number_table_att[m] = LineNumberTable_attribute {
+											attribute_name_index:lnt_a.attribute_name_index,
+											attribute_length:lnt_a.attribute_length,
+											line_number_table_length:lnt_a.line_number_table_length,
+											line_number_tables:d.cf.method[i].attributes[j].line_number_table_att[m].line_number_tables}
+							
+										}
+
+									d.cf.method[i].attributes[j] = code_attribute {attribute_name_index:name_index,
+										attribute_length:length,
+										max_stack:ca.max_stack,
+										max_locals:ca.max_locals,
+										code_length:ca.code_length,
+										code:ca.code,//d.cf.method[i].attributes[j].code, // There is no []code inside.
+										exception_table_length:ca.exception_table_length,
+										exception:d.cf.method[i].attributes[j].exception,
+										attributes_count:ca.attributes_count,
+										line_number_table_att:d.cf.method[i].attributes[j].line_number_table_att}
+								}
+					}
+	}
+}
+								/*
+									ca.exception_table_length=d.bo.Uint16(info[8+ca.code_length:10+ca.code_length])
+									ca.exception_tables=make([]exception_table,ca.exception_table_length)
+										// loopfor exception
+										for k:=uint16(0) ;k < ca.exception_table_length ;k++{}
+
+										index:=uint16(ca.code_length)+ca.exception_table_length // Starting Point of Attributes count.
+									ca.attributes_count=d.bo.Uint16(info[index+10:index+12])
+									ca.attributes=make([]LineNumberTable_attribute,ca.attributes_count)
+										var lnt LineNumberTable_attribute
+										for l:=uint16(0) ;l < ca.attributes_count ; l++{
+											var nameindex 			uint16
+											var attributelength 	uint32
+											nameindex = d.bo.Uint16(info[index+12:index+14])
+											attributelength = d.bo.Uint32(info[index+14:index+18])
+											lnt.attribute_name_index = nameindex
+											lnt.attribute_length = attributelength
+											lnt.line_number_table_length = d.bo.Uint16(info[index+18:index+20])
+											lnt.line_number_tables = make([]line_number_table, lnt.line_number_table_length)
+											fmt.Println("(a)", string(d.cf.constant_pool[nameindex].info[2:]))
+											for o := uint16(0); o < lnt.line_number_table_length; o++ {
+												var startpc uint16
+												var lineNumber uint16
+												startpc = d.bo.Uint16(info[index+20+(o*4):index+22+(o*4)])
+												lineNumber = d.bo.Uint16(info[index+22+(o*4):index+24+(o*4)])
+												lnt.line_number_tables[o] = line_number_table { start_pc:startpc, line_number:lineNumber }
+												fmt.Println("line",lineNumber,":", startpc)
+											}
+											d.cf.method[i].attributes[j].line_number_tables[l] = LineNumberTable_attribute {
+												attribute_name_index:lnt.attribute_name_index, 
+												attribute_length:lnt.attribute_length,
+												line_number_table_length:lnt.line_number_table_length,
+												line_number_tables:d.cf.method[i].attributes[j].line_number_table_att[l].line_number_tables}
+										}
+								
+
+								}
+								d.cf.method[i].attributes[j]=code_attribute{
+									attribute_name_index:ca.attribute_name_index,
+									attribute_length:ca.attribute_length,
+									max_stack:ca.max_stack,
+									max_locals:ca.max_locals,
+									code_length:ca.code_length,
+									code:ca.code,
+									exception_table_length:ca.exception_table_length,
+									exception_tables:ca.exception_tables,
+									attributes_count:ca.attributes_count,
+									attributes:ca.attributes}		
+						
+								
 					}	
 	}	
-} 
+} */
 func (d *decoder) lookupcode(ca []uint8,length uint32) {
    	//fmt.Printf("\n%x\n",ca[:1])
    	var m = make(map[int]string)
@@ -634,28 +764,39 @@ for k:=203 ; k<254; k++{
 	m[k]="noname"
 }														
 	m[254]="impdep1"						
-	m[255]="impdep2"			
+	m[255]="impdep2"	
+
 	checkTank := 0		
 for j:=uint32(0) ;j<length ;j++{
-	if checkTank>0{
+	if checkTank==1{
+		keepindex := ca[j:j+1]
+		 checkTank=0
+		 j=j
+		 fmt.Println("keepindex 1 : = ",keepindex)
+	}else if checkTank==2{
 		keepindex := ca[j:j+2]
 		 checkTank=0
 		 j=j+1
-		 fmt.Println("keepindex : = ",keepindex)
+		 fmt.Println("keepindex 2 : = ",keepindex)
 	}else{
 		t := ca[j:j+1]
 		s := make([]interface{}, len(t))
 		for i, v := range t {
 			s[i]=v
 			value,_:=m[int(v)]
-		//=====================Group 2 Bytes Index.=========================
-			 if (int(v)==183)||(int(v)==181){ //invokespecial next 2 bytes will be indexes of Constant pool table.
-				fmt.Println(j,": ",value)
-				checkTank=1
-			}else{
-				fmt.Println(j,": ",value)
-				checkTank=0
-   			}
+				switch int(v){
+					case 183:fallthrough
+					case 182:fallthrough
+					case 181:
+						fmt.Println(j,": ",value)
+						checkTank=2
+					case 18:
+						fmt.Println(j,": ",value)
+						checkTank=1
+					default: 
+						fmt.Println(j,": ",value)
+						checkTank=0
+				}
    		}
 	}
 }
@@ -691,13 +832,13 @@ func checkSize(f *os.File) (){
 }
 
 
-func openfile(filename string,cf classfile) {
+func openfile(filename string,cf *classfile) {
 	f , err := os.Open(filename) // For read file.
 		if err != nil {
 			fmt.Printf("%v", err)	
 		}
 	defer f.Close()
-	d := decoder{file:f, bo:binary.BigEndian ,cf: &cf}
+	d := decoder{file:f, bo:binary.BigEndian ,cf: cf}
 
 	checkSize(f)
     d.readMagic()
@@ -712,18 +853,41 @@ func openfile(filename string,cf classfile) {
     
 }
 
+func findMethod(name string, cf *classfile) (ca code_attribute) {
+	fmt.Println("Hey")
+	for i := uint16(0); i < cf.method_count; i++ {
+		met := cf.constant_pool[cf.method[i].name_index]
+		if string(met.info[2:]) == name {
+			fmt.Println("Now found main")
+			for j := uint16(0); j < cf.method[i].attributes_count; j++ {
+				attName := cf.constant_pool[cf.method[i].attributes[j].attribute_name_index]
+				if string(attName.info[2:]) == "Code" {
+					return cf.method[i].attributes[j]
+				}
+			}
+		}
+	}
+	return
+}
 
 func main() {
-var (
-		filename string	
-	 	cf classfile
-	)
+
+		var	filename string	
+	 	cf := &classfile{}
 	
-		if len(os.Args)==1 {
+	
+	if len(os.Args)==1 {
 			filename ="file not found"
-		}else{
-			filename=os.Args[1]
-		} 
- openfile(filename,cf)
+	}else{
+		filename=os.Args[1]
+		openfile(filename,cf)
+		ca:=findMethod("main",cf)
+		fmt.Println("Code Attribute:",ca)
+		fmt.Println("code:",ca.code)
+			
+		
+	} 
+ 	
+
 }
 
