@@ -1266,6 +1266,11 @@ func execute(ca code_attribute, cf *classFile) {
 			case bipush :
 				s.push(uint32(code[pc+1]))
 				pc = pc + 2
+			case sipush :
+				getb := []byte{code[pc+1], code[pc+2]}
+    			value := uint32(binary.BigEndian.Uint16(getb))
+    			s.push(value)
+				pc = pc + 3
 			case iadd :
 				o1 := s.pop()
 				o2 := s.pop()
