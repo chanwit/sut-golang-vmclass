@@ -26,6 +26,214 @@ type classfile struct{
 	attributes_count						uint16
 	attributes								[]attribute_info
 }	
+const (
+nop 			= iota
+aconst_null
+iconst_m1
+iconst_0
+iconst_1
+iconst_2
+iconst_3
+iconst_4
+iconst_5
+lconst_0
+lconst_1
+fconst_0
+fconst_1
+fconst_2
+dconst_0
+dconst_1
+bipush
+sipush
+ldc
+ldc_w
+ldc2_w
+iload
+lload
+fload
+dload
+aload
+iload_0
+iload_1
+iload_2
+iload_3
+lload_0
+lload_1
+lload_2
+lload_3
+fload_0
+fload_1
+fload_2
+fload_3
+dload_0
+dload_1
+dload_2
+dload_3
+aload_0
+aload_1
+aload_2
+aload_3
+iaload
+laload
+faload
+daload
+aaload
+baload
+caload
+saload
+istore
+lstore
+fstore
+dstore
+astore
+istore_0
+istore_1
+istore_2
+istore_3
+lstore_0
+lstore_1
+lstore_2
+lstore_3
+fstore_0
+fstore_1
+fstore_2
+fstore_3
+dstore_0
+dstore_1
+dstore_2
+dstore_3
+astore_0
+astore_1
+astore_2
+astore_3
+iastore
+lastore
+fastore
+dastore
+aastore
+bastore
+castore
+sastore
+pop
+pop2
+dup
+dup_x1
+dup_x2
+dup2
+dup2_x1
+dup2_x2
+swap
+iadd
+ladd
+fadd
+dadd
+isub
+lsub
+fsub
+dsub
+imul
+lmul
+fmul
+dmul
+idiv
+ldiv
+fdiv
+ddiv
+irem
+lrem
+frem
+drem
+ineg
+lneg
+fneg
+dneg
+ishl
+lshl
+ishr
+lshr
+iushr
+lushr
+iand
+land
+ior
+lor
+ixor
+lxor
+iinc
+i2l
+i2f
+i2d
+l2i
+l2f
+l2d
+f2i
+f2l
+f2d
+d2i
+d2l
+d2f
+i2b
+i2c
+i2s
+lcmp
+fcmpl
+fcmpg
+dcmpl
+dcmpg
+ifeq
+ifne
+iflt
+ifge
+ifgt
+ifle
+if_icmpeq
+if_icmpne
+if_icmplt
+if_icmpge
+if_icmpgt
+if_icmple
+if_acmpeq
+if_acmpne
+goto_x
+jsr
+ret
+tableswitch
+lookupswitch
+ireturn
+lreturn
+freturn
+dreturn
+areturn
+return_x
+getstatic
+putstatic
+getfield
+putfield
+invokevirtual
+invokespecial
+invokestatic
+invokeinterface
+invokedynamic
+new
+newarray
+anewarray
+arraylength
+athrow
+checkcast
+instanceof
+monitorenter
+monitorexit
+wide
+multianewarray
+ifnull
+ifnonnull
+goto_w
+jsr_w
+breakpoint
+//(no name) = 0xcb-fd
+impdep1 = 254
+impdep2 = 255
+)
 
 const (
     ACC_PUBLIC      = 0x0001
@@ -44,6 +252,7 @@ const(		//ACC_PUBLIC 	= 0x0001
 		ACC_SYNTHETIC 	= 0x1000 	
 		ACC_ENUM 	= 0x4000
 )
+
 
 type cp_info struct{
 	tag		uint8
@@ -234,12 +443,6 @@ func (d *decoder) readConstantPool() {
 				binary.Read(d.file, d.bo, info)
 				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
 			case CONSTANT_NameAndType :fallthrough
-			/*	var nameindex 			uint16
-				var descriptorindex 	uint16
-				binary.Read(d.file, d.bo, &nameindex)
-				binary.Read(d.file, d.bo, &descriptorindex)
-				d.cf.constant_pool[i] = CONSTANT_NameAndType_info{ tag:tag, name_index:nameindex, descriptor_index:descriptorindex }
-			  */
 			case CONSTANT_Integer :fallthrough
 			case CONSTANT_Float :fallthrough
 			
@@ -434,7 +637,7 @@ func (d *decoder) readMethod() {
 									ca.max_locals=d.bo.Uint16(info[2:4])
 									ca.code_length=d.bo.Uint32(info[4:8])
 									ca.code=info[8:8+ca.code_length]
-									d.lookupcode(ca.code,ca.code_length)
+									lookupcode(ca.code,ca.code_length)
 
 									ca.exception_table_length = d.bo.Uint16(info[8+ca.code_length:10+ca.code_length])
 									d.cf.method[i].attributes[j].exception = make([]exception_table, ca.exception_table_length)
@@ -554,7 +757,7 @@ func (d *decoder) readMethod() {
 					}	
 	}	
 } */
-func (d *decoder) lookupcode(ca []uint8,length uint32) {
+func lookupcode(ca []uint8,length uint32) {
    	//fmt.Printf("\n%x\n",ca[:1])
    	var m = make(map[int]string)
    	m[0]="nop"				
@@ -869,6 +1072,127 @@ func findMethod(name string, cf *classfile) (ca code_attribute) {
 	}
 	return
 }
+type stack struct{
+	data	[]uint32
+	tos		int
+}
+func (s *stack) init(size int) {
+	s.data = make([]uint32,size)
+	s.tos = -1
+}
+func (s *stack) push(u uint32) {
+	s.tos = s.tos+1
+	s.data[s.tos] = u
+}
+func (s *stack) pop()(u uint32) {
+	u = s.data[s.tos]
+	s.tos=s.tos-1
+	return
+}
+func execuse(ca code_attribute,cf *classfile) {
+	code:=ca.code
+	s := &stack{}
+	s.init(int(ca.max_stack))
+	locals := make([]uint32, ca.max_locals)
+	pc:=0
+	for {
+		op := code[pc]
+			switch op{
+			case iconst_1:
+					s.push(1)
+					pc++
+			case iconst_2:
+					s.push(2)
+					pc++
+			case iconst_3:
+					s.push(3)
+					pc++
+			case iconst_4:
+					s.push(4)
+					pc++
+			case iconst_5:
+					s.push(5)
+					pc++
+			case istore:
+					pc++
+					index:=code[pc]
+					locals[int(index)] =s.pop()
+					pc++
+			case istore_1:
+					locals[1] =s.pop()
+					pc++
+			case istore_2:
+					locals[2] =s.pop()
+					pc++
+			case istore_3:
+					locals[3] =s.pop()
+					pc++
+			case iload_1:
+					s.push(locals[1])
+					pc++
+			case iload_2:
+					s.push(locals[2])
+					pc++
+			case iload_3:
+					s.push(locals[3])
+					pc++
+			case iadd:
+					o1:=s.pop()
+					o2:=s.pop()
+					result:=o2+o1
+					s.push(result)
+					pc++
+			case isub:
+					o1:=s.pop()
+					o2:=s.pop()
+					result:=o2-o1
+					s.push(result)
+					pc++
+			case imul:
+					o1 := s.pop()
+					o2 := s.pop()
+					result := o2*o1
+					s.push(result)
+					pc++
+			case idiv: // Need to fixed Divided By Zero
+					o1 := s.pop()
+					o2 := s.pop()
+						result := o2/o1
+						s.push(result)
+						pc++
+			case bipush:
+					pc++
+					val:=code[pc]
+					s.push(uint32(val))
+					pc++
+			case sipush:
+						pc++
+					va:=make([]byte,4)
+						va[1]=code[pc] //Hight Byte
+							pc++
+						va[0]=code[pc] //Low Byte
+					var sum uint32
+					sum = binary.LittleEndian.Uint32(va[:4]) //mustbe 4 bytes
+					s.push(sum)
+						pc++
+			case return_x:
+				fmt.Println(locals)
+					//fmt.Printf("3: %d\n",int(locals[3])) //special for Sub! set index to last
+				pc++
+				return
+			}	
+						//case invokevirtual:
+						//	pc++
+						//	ib1:=code[pc]
+						//	pc++
+						//	ib2:=code[pc]
+						//	ib:=(ib1 << 8)+ib2
+						//	cf.constant_pool[ib]
+						//case getstatic:
+	
+
+		}
+}
 
 func main() {
 
@@ -882,12 +1206,13 @@ func main() {
 		filename=os.Args[1]
 		openfile(filename,cf)
 		ca:=findMethod("main",cf)
-		fmt.Println("Code Attribute:",ca)
-		fmt.Println("code:",ca.code)
-			
-		
-	} 
- 	
+		//fmt.Println("Code Attribute:",ca)
+		fmt.Printf("\ncode:%x \n",ca.code)
+		execuse(ca, cf)
+				//lookupcode(ca.code,ca.code_length)	
+			 
+
+ 	}
 
 }
 
