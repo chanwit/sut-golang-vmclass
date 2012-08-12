@@ -1230,6 +1230,9 @@ func execute(ca code_attribute, cf *classFile) {
 	for {
 		op := code[pc]
 		switch op {
+			case ldc :
+				s.push(uint32(binary.BigEndian.Uint32(cf.constant_pool[code[pc+1]].info)))
+				pc = pc + 2
 			case iconst_1 :
 				s.push(1)
 				pc++
@@ -1245,6 +1248,9 @@ func execute(ca code_attribute, cf *classFile) {
 			case iconst_5 :
 				s.push(5)
 				pc++
+			case istore :
+				locals[code[pc+1]] = s.pop()
+				pc = pc + 2
 			case istore_1 :
 				locals[1] = s.pop()
 				pc++
@@ -1254,6 +1260,9 @@ func execute(ca code_attribute, cf *classFile) {
 			case istore_3 :
 				locals[3] = s.pop()
 				pc++
+			case iload :
+				s.push(locals[code[pc+1]])
+				pc = pc + 2
 			case iload_1 :
 				s.push(locals[1])
 				pc++
