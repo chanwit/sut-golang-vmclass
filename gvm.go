@@ -431,7 +431,13 @@ func (d *decoder) readConstantPool() {
 		var tag uint8
 		binary.Read(d.file,d.bo,&(tag))
 			switch tag { 
-			case CONSTANT_Class :fallthrough
+			case CONSTANT_Class :
+				var name_index uint16
+				info := make([]byte, 2)
+				binary.Read(d.file, d.bo, info)
+				name_index=binary.BigEndian.Uint16(info[:2])
+				fmt.Printf("#%d\t#%d\n",i,name_index)
+				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
 			case CONSTANT_String :fallthrough
 			case CONSTANT_MethodType :
 				info := make([]byte, 2)
@@ -442,17 +448,27 @@ func (d *decoder) readConstantPool() {
 				info := make([]byte, 3)
 				binary.Read(d.file, d.bo, info)
 				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
-			case CONSTANT_NameAndType :fallthrough
+			
 			case CONSTANT_Integer :fallthrough
 			case CONSTANT_Float :fallthrough
-			
 			case CONSTANT_Fieldref :fallthrough
-			case CONSTANT_Methodref :fallthrough
 			case CONSTANT_InterfaceMethodref :fallthrough
 			case CONSTANT_InvokeDynamic :
 				info := make([]byte, 4)
 				binary.Read(d.file, d.bo, info)
 				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
+			case CONSTANT_Methodref : //4
+				var class_index uint16
+				var name_and_type_index uint16
+				binary.Read(d.file, d.bo, &class_index)
+				binary.Read(d.file, d.bo, &name_and_type_index)
+				fmt.Printf("#%d\t#%d.#%d\n", i,class_index,name_and_type_index)
+			case CONSTANT_NameAndType : //4
+				var name_index uint16
+				var descriptor_index uint16
+				binary.Read(d.file, d.bo, &name_index)
+				binary.Read(d.file, d.bo, &descriptor_index)
+				fmt.Printf("#%d\t#%d.#%d\n", i,name_index , descriptor_index)
 
 			case CONSTANT_Long :fallthrough
 			case CONSTANT_Double :
@@ -467,7 +483,7 @@ func (d *decoder) readConstantPool() {
 				binary.BigEndian.PutUint16(info[0:2], length)
 				binary.Read(d.file, d.bo, info[2:])
 				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
-				fmt.Printf("#%d\t %s\n",i,info[2:])
+				fmt.Printf("#%d\t%s\n",i,info[2:])
 		}
 	}
 	
@@ -1009,6 +1025,7 @@ for j:=uint32(0) ;j<length ;j++{
    
    		
  }
+
 
 func (d *decoder) readAttribute() {
 		binary.Read(d.file, d.bo, &(d.cf.attributes_count))
