@@ -1231,7 +1231,12 @@ func execute(ca code_attribute, cf *classFile) {
 		op := code[pc]
 		switch op {
 			case ldc :
-				s.push(uint32(binary.BigEndian.Uint32(cf.constant_pool[code[pc+1]].info)))
+				switch len(cf.constant_pool[code[pc+1]].info) {
+					case 2 :
+						s.push(uint32(binary.BigEndian.Uint16(cf.constant_pool[code[pc+1]].info)))
+					case 4 :
+						s.push(uint32(binary.BigEndian.Uint32(cf.constant_pool[code[pc+1]].info)))
+				}
 				pc = pc + 2
 			case iconst_1 :
 				s.push(1)
@@ -1308,14 +1313,20 @@ func execute(ca code_attribute, cf *classFile) {
 				fmt.Println(locals)
 				pc++
 				return
-			//case invokevirtual :
-			//	pc++
-			//	ib1 := code[pc]
-			//	pc++
-			//	ib2 := code[pc]
-			//	ib := (ib1 << 8) + ib2
-			//	cf.constant_pool[ib]
-			//case getstatic :
+			case getstatic :
+				getb := []byte{code[pc+1], code[pc+2]}
+    			value := binary.BigEndian.Uint16(getb)
+    			if cf.constant_pool[value].tag == CONSTANT_Fieldref {
+    				fmt.Print("CONSTANT_Fieldref : ")
+    				//fmt.Println("fieldref=", cf.constant_pool[value].info)
+    				//fmt.Println("class_index=", binary.BigEndian.Uint16(cf.constant_pool[value].info[:2]))
+    				//fmt.Println("name_and_type_index=", binary.BigEndian.Uint16(cf.constant_pool[value].info[2:]))
+    			}
+    			pc = pc + 3
+			case invokevirtual :
+				str := s.pop()
+    			fmt.Println(string(cf.constant_pool[str].info[2:]))
+				pc = pc + 3
 		}
 	}
 }
