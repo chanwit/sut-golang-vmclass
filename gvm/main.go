@@ -1085,20 +1085,14 @@ func main() {
     if len(os.Args) == 1 {
         fmt.Println("please input fileName !!!")
     } else {
-        fileName := os.Args[1]
+        fileName  := os.Args[1]
         fileClass := fileName + ".class"
         fmt.Printf("  ClassFile: \"%s\"; ", fileClass)
-        readFile(fileClass, cf)
 
-        //find method main
-        //execute code of method main
-        //execute (ca.code)
-
-        ca := findMethod("main", cf)
+        readFile(fileClass, cf))
+        ca := findMethod("main", cf) // ACC_STATIC main ([Ljava/lang/String;)V
         fmt.Println(ca.code)
         execute(ca, cf)
-
-        //fmt.Println(cf.methods[1].attributes[0])
     }
 
 }

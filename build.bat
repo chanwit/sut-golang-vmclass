@@ -4,4 +4,4 @@ set GOARM=5
 
 cd gvm
 
-go build gvm.go
+go build
