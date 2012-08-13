@@ -482,6 +482,7 @@ func (d *decoder) readConstantPool() {
 			//	fmt.Printf("#%d\t%s\n",i,info[2:])
 		}	
 	}
+	// --------------------To out put all constant_pool ---------------------
 	for j:= uint16(1); j<d.cf.constant_pool_count ;j++{
 		check := d.cf.constant_pool[j]
 
@@ -498,6 +499,16 @@ func (d *decoder) readConstantPool() {
 						fmt.Printf("%s",string(d.cf.constant_pool[nextclassindex].info[2:]))
 					nextnatindex:=binary.BigEndian.Uint16(d.cf.constant_pool[nametypeindex].info[:2])
 						fmt.Printf(".%q",string(d.cf.constant_pool[nextnatindex].info[2:]))
+					overnatindex:=binary.BigEndian.Uint16(d.cf.constant_pool[nametypeindex].info[2:4])
+						fmt.Printf(":%s\n",string(d.cf.constant_pool[overnatindex].info[2:]))
+		case CONSTANT_Fieldref :
+			classindex:=binary.BigEndian.Uint16(check.info[:2])
+				nametypeindex:=binary.BigEndian.Uint16(check.info[2:4])
+					fmt.Printf("#%d = Fieldref\t\t#%d.#%d\t// ",j,classindex,nametypeindex)				//#3.#20
+					nextclassindex:=binary.BigEndian.Uint16(d.cf.constant_pool[classindex].info[:2])
+						fmt.Printf("%s",string(d.cf.constant_pool[nextclassindex].info[2:]))
+					nextnatindex:=binary.BigEndian.Uint16(d.cf.constant_pool[nametypeindex].info[:2])
+						fmt.Printf(".%s",string(d.cf.constant_pool[nextnatindex].info[2:]))
 					overnatindex:=binary.BigEndian.Uint16(d.cf.constant_pool[nametypeindex].info[2:4])
 						fmt.Printf(":%s\n",string(d.cf.constant_pool[overnatindex].info[2:]))
 		case CONSTANT_NameAndType :
