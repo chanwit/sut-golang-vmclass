@@ -420,74 +420,6 @@ func (d *decoder) readVersion() {
     binary.Read(d.file, d.bo, &(d.cf.major_version))
     fmt.Printf("Version = %d.%d\n", d.cf.major_version,d.cf.minor_version)
 }
-
-func (d *decoder) readConstantPool() {
-	binary.Read(d.file,d.bo,&(d.cf.constant_pool_count))
-	fmt.Printf("cp count = %d\n", d.cf.constant_pool_count)
-
-	d.cf.constant_pool = make([]cp_info, d.cf.constant_pool_count)
-	for i:= uint16(1); i<d.cf.constant_pool_count ;i++{
-		
-		var tag uint8
-		binary.Read(d.file,d.bo,&(tag))
-			switch tag { 
-			case CONSTANT_Class :
-				var name_index uint16
-				info := make([]byte, 2)
-				binary.Read(d.file, d.bo, info)
-				name_index=binary.BigEndian.Uint16(info[:2])
-				fmt.Printf("#%d\t#%d\n",i,name_index)
-				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
-			case CONSTANT_String :fallthrough
-			case CONSTANT_MethodType :
-				info := make([]byte, 2)
-				binary.Read(d.file, d.bo, info)
-				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
-
-			case CONSTANT_MethodHandle :
-				info := make([]byte, 3)
-				binary.Read(d.file, d.bo, info)
-				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
-			
-			case CONSTANT_Integer :fallthrough
-			case CONSTANT_Float :fallthrough
-			case CONSTANT_Fieldref :fallthrough
-			case CONSTANT_InterfaceMethodref :fallthrough
-			case CONSTANT_InvokeDynamic :
-				info := make([]byte, 4)
-				binary.Read(d.file, d.bo, info)
-				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
-			case CONSTANT_Methodref : //4
-				var class_index uint16
-				var name_and_type_index uint16
-				binary.Read(d.file, d.bo, &class_index)
-				binary.Read(d.file, d.bo, &name_and_type_index)
-				fmt.Printf("#%d\t#%d.#%d\n", i,class_index,name_and_type_index)
-			case CONSTANT_NameAndType : //4
-				var name_index uint16
-				var descriptor_index uint16
-				binary.Read(d.file, d.bo, &name_index)
-				binary.Read(d.file, d.bo, &descriptor_index)
-				fmt.Printf("#%d\t#%d.#%d\n", i,name_index , descriptor_index)
-
-			case CONSTANT_Long :fallthrough
-			case CONSTANT_Double :
-				info := make([]byte, 8)
-				binary.Read(d.file, d.bo, info)
-				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
-		
-			case CONSTANT_Utf8 :
-				var length uint16
-				binary.Read(d.file, d.bo, &(length))
-				info := make([]byte, 2 + length)
-				binary.BigEndian.PutUint16(info[0:2], length)
-				binary.Read(d.file, d.bo, info[2:])
-				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
-				fmt.Printf("#%d\t%s\n",i,info[2:])
-		}
-	}
-	
-}
 func (d *decoder) readFlag() {
 	binary.Read(d.file, d.bo, &(d.cf.access_flags))
 	if d.cf.access_flags & ACC_PUBLIC == ACC_PUBLIC {
@@ -501,6 +433,85 @@ func (d *decoder) readFlag() {
 	}
 
 }
+func (d *decoder) readConstantPool() {
+	binary.Read(d.file,d.bo,&(d.cf.constant_pool_count))
+	fmt.Printf("Constant pool:\n")
+
+	d.cf.constant_pool = make([]cp_info, d.cf.constant_pool_count)
+	for i:= uint16(1); i<d.cf.constant_pool_count ;i++{
+		
+		var tag uint8
+		binary.Read(d.file,d.bo,&(tag))
+			switch tag { 
+			case CONSTANT_Class :
+				info := make([]byte, 2)
+				binary.Read(d.file, d.bo, info)
+				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
+			case CONSTANT_String :fallthrough
+			case CONSTANT_MethodType :
+				info := make([]byte, 2)
+				binary.Read(d.file, d.bo, info)
+				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
+			case CONSTANT_MethodHandle :
+				info := make([]byte, 3)
+				binary.Read(d.file, d.bo, info)
+				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
+			case CONSTANT_Fieldref :fallthrough
+			case CONSTANT_Integer :fallthrough
+			case CONSTANT_Float :fallthrough
+			case CONSTANT_NameAndType :fallthrough
+			case CONSTANT_InterfaceMethodref :fallthrough
+			case CONSTANT_Methodref :fallthrough
+			case CONSTANT_InvokeDynamic :
+				info := make([]byte, 4)
+				binary.Read(d.file, d.bo, info)
+				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
+			case CONSTANT_Long :fallthrough
+			case CONSTANT_Double :
+				info := make([]byte, 8)
+				binary.Read(d.file, d.bo, info)
+				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
+		
+			case CONSTANT_Utf8 :
+				var length uint16
+				binary.Read(d.file, d.bo, &(length))
+				info := make([]byte, 2 + length)
+				binary.BigEndian.PutUint16(info[0:2], length)
+				binary.Read(d.file, d.bo, info[2:])
+				d.cf.constant_pool[i] = cp_info{ tag:tag, info:info }
+			//	fmt.Printf("#%d\t%s\n",i,info[2:])
+		}	
+	}
+	for j:= uint16(1); j<d.cf.constant_pool_count ;j++{
+		check := d.cf.constant_pool[j]
+
+		switch d.cf.constant_pool[j].tag  {
+		case CONSTANT_Class :
+			insec:=binary.BigEndian.Uint16(check.info[:])
+			fmt.Printf("#%d = Class\t\t#%d\t// ",j,insec)
+			fmt.Printf("%s\n",string(d.cf.constant_pool[insec].info[2:]))
+		case CONSTANT_Methodref :
+			classindex:=binary.BigEndian.Uint16(check.info[:2])
+				nametypeindex:=binary.BigEndian.Uint16(check.info[2:4])
+					fmt.Printf("#%d = Methodref\t\t#%d.#%d\t// ",j,classindex,nametypeindex)				//#3.#20
+					nextclassindex:=binary.BigEndian.Uint16(d.cf.constant_pool[classindex].info[:2])
+						fmt.Printf("%s",string(d.cf.constant_pool[nextclassindex].info[2:]))
+					nextnatindex:=binary.BigEndian.Uint16(d.cf.constant_pool[nametypeindex].info[:2])
+						fmt.Printf(".%q",string(d.cf.constant_pool[nextnatindex].info[2:]))
+					overnatindex:=binary.BigEndian.Uint16(d.cf.constant_pool[nametypeindex].info[2:4])
+						fmt.Printf(":%s\n",string(d.cf.constant_pool[overnatindex].info[2:]))
+		case CONSTANT_NameAndType :
+			nameindex:=binary.BigEndian.Uint16(check.info[:2])
+			desindex:=binary.BigEndian.Uint16(check.info[2:4])
+			fmt.Printf("#%d = NameAndType\t#%d:#%d\t// ",j,nameindex,desindex)
+			fmt.Printf("%q:%s\n",string(d.cf.constant_pool[nameindex].info[2:]),string(d.cf.constant_pool[desindex].info[2:]))
+		case CONSTANT_Utf8 :
+			fmt.Printf("#%d = Utf8\t\t%s\n",j,check.info[2:])
+
+		}	
+	}
+}
+
 func (d *decoder) readThis() {
 	binary.Read(d.file,d.bo,&(d.cf.this_class))
 
@@ -1040,7 +1051,7 @@ func (d *decoder) readAttribute() {
 				binary.Read(d.file, d.bo, &info)
 					d.cf.attributes[i] = attribute_info{ attribute_name_index:name_index, attribute_length:length, info:info }
 					att := d.cf.constant_pool[name_index]
-					fmt.Println(att, string(att.info[2:]))
+					fmt.Println(string(att.info[2:]))
 		}
 }
 
