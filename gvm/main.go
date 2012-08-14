@@ -1089,7 +1089,7 @@ func main() {
         fileClass := fileName + ".class"
         fmt.Printf("  ClassFile: \"%s\"; ", fileClass)
 
-        readFile(fileClass, cf))
+        readFile(fileClass, cf)
         ca := findMethod("main", cf) // ACC_STATIC main ([Ljava/lang/String;)V
         fmt.Println(ca.code)
         execute(ca, cf)
