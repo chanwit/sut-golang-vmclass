@@ -257,50 +257,51 @@ func (d *decoder) readConstantPool() {
 func (d *decoder) readFlag() {
     binary.Read(d.file, d.bo, &(d.cf.access_flags))
     fmt.Print("  flags:")
-    if d.cf.access_flags&ACC_PUBLIC == ACC_PUBLIC {
+    accessFlags := d.cf.access_flags
+    if accessFlags & ACC_PUBLIC == ACC_PUBLIC {
         fmt.Print(" ACC_PUBLIC,")
     }
-    if d.cf.access_flags&ACC_PRIVATE == ACC_PRIVATE {
+    if accessFlags & ACC_PRIVATE == ACC_PRIVATE {
         fmt.Print(" ACC_PRIVATE,")
     }
-    if d.cf.access_flags&ACC_PROTECTED == ACC_PROTECTED {
+    if accessFlags & ACC_PROTECTED == ACC_PROTECTED {
         fmt.Print(" ACC_PROTECTED,")
     }
-    if d.cf.access_flags&ACC_STATIC == ACC_STATIC {
+    if accessFlags & ACC_STATIC == ACC_STATIC {
         fmt.Print(" ACC_STATIC,")
     }
-    if d.cf.access_flags&ACC_FINAL == ACC_FINAL {
+    if accessFlags & ACC_FINAL == ACC_FINAL {
         fmt.Print(" ACC_FINAL,")
     }
-    if d.cf.access_flags&ACC_SUPER == ACC_SUPER {
+    if accessFlags & ACC_SUPER == ACC_SUPER {
         fmt.Print(" ACC_SUPER,")
     }
-    if d.cf.access_flags&ACC_VOLATILE == ACC_VOLATILE {
+    if accessFlags & ACC_VOLATILE == ACC_VOLATILE {
         fmt.Print(" ACC_VOLATILE,")
     }
-    if d.cf.access_flags&ACC_TRANSIENT == ACC_TRANSIENT {
+    if accessFlags & ACC_TRANSIENT == ACC_TRANSIENT {
         fmt.Print(" ACC_TRANSIENT,")
     }
-    if d.cf.access_flags&ACC_INTERFACE == ACC_INTERFACE {
+    if accessFlags & ACC_INTERFACE == ACC_INTERFACE {
         fmt.Print(" ACC_INTERFACE,")
     }
-    if d.cf.access_flags&ACC_ABSTRACT == ACC_ABSTRACT {
+    if accessFlags & ACC_ABSTRACT == ACC_ABSTRACT {
         fmt.Print(" ACC_ABSTRACT,")
     }
-    if d.cf.access_flags&ACC_SYNTHETIC == ACC_SYNTHETIC {
+    if accessFlags & ACC_SYNTHETIC == ACC_SYNTHETIC {
         fmt.Print(" ACC_SYNTHETIC,")
     }
-    if d.cf.access_flags&ACC_ENUM == ACC_ENUM {
+    if accessFlags & ACC_ENUM == ACC_ENUM {
         fmt.Print(" ACC_ENUM,")
     }
     fmt.Print("\b \n")
 }
 
 func (d *decoder) readClass() {
-    binary.Read(d.file, d.bo, &(d.cf.this_class))
+    binary.Read(d.file, d.bo, &(d.cf.this_class ))
     binary.Read(d.file, d.bo, &(d.cf.super_class))
     fmt.Println("Class:")
-    thisc := d.cf.constant_pool[d.cf.this_class]
+    thisc  := d.cf.constant_pool[d.cf.this_class ]
     superc := d.cf.constant_pool[d.cf.super_class]
     fmt.Println("  this class:", string(d.cf.constant_pool[(d.bo.Uint16(thisc.info))].info[2:]))
     fmt.Println("  super class:", string(d.cf.constant_pool[(d.bo.Uint16(superc.info))].info[2:]))
@@ -308,9 +309,10 @@ func (d *decoder) readClass() {
 
 func (d *decoder) readInterface() {
     binary.Read(d.file, d.bo, &(d.cf.interfaces_count))
-    fmt.Printf("Interface(%d):\n", d.cf.interfaces_count)
-    d.cf.interfaces = make([]uint16, d.cf.interfaces_count)
-    for i := uint16(0); i < d.cf.interfaces_count; i++ {
+    interfaceCount := d.cf.interfaces_count
+    fmt.Printf("Interface(%d):\n", interfaceCount)
+    d.cf.interfaces = make([]uint16, interfaceCount)
+    for i := uint16(0); i < interfaceCount; i++ {
         binary.Read(d.file, d.bo, &(d.cf.interfaces[i]))
         inter := d.cf.constant_pool[d.cf.interfaces[i]]
         fmt.Println(" ", string(d.cf.constant_pool[(d.bo.Uint16(inter.info))].info[2:]))
@@ -910,7 +912,9 @@ func (d *decoder) readAttribute() {
         binary.Read(d.file, d.bo, &length)
         info := make([]uint8, length)
         binary.Read(d.file, d.bo, &info)
-        d.cf.attributes[i] = attribute_info{attribute_name_index: name_index, attribute_length: length, info: info}
+        d.cf.attributes[i] = attribute_info{attribute_name_index: name_index,
+                                            attribute_length: length,
+                                            info: info}
 
         att := d.cf.constant_pool[name_index]
         fmt.Println(att, string(att.info[2:]))
@@ -943,11 +947,24 @@ func readFile(fileClass string, cf *classFile) {
     //d.readAttribute()
 }
 
-func findMethod(name string, cf *classFile) (ca code_attribute) {
-    fmt.Printf("\nFind method %s:\n", name)
+func flagsOn(value uint16, flag uint16) bool {
+    return (value & flag) == flag
+}
+
+// findMethod ACC_STATIC | ACC_PUBLIC main ([Ljava/lang/String;)V
+func findMethod(flags uint16, signature string, cf *classFile) (ca code_attribute) {
+    fmt.Printf("\nFind method %s:\n", signature)
     for i := uint16(0); i < cf.method_count; i++ {
-        ni := cf.constant_pool[cf.methods[i].name_index]
-        if string(ni.info[2:]) == name {
+        method    := cf.methods[i]
+        nameIndex := cf.constant_pool[method.name_index]
+        descIndex := cf.constant_pool[method.descriptor_index]
+
+        methodSignature := string(nameIndex.info[2:]) + string(descIndex.info[2:])
+        fmt.Printf("\nChecking signature %s:\n", methodSignature)
+        accessFlags := method.access_flags
+
+        if methodSignature == signature && flagsOn(accessFlags, flags) {
+            fmt.Printf("\nFound signature %s:\n", methodSignature)
             for j := uint16(0); j < cf.methods[i].attributes_count; j++ {
                 niMain := cf.constant_pool[cf.methods[i].attributes[j].attribute_name_index]
                 if string(niMain.info[2:]) == "Code" {
@@ -962,7 +979,7 @@ func findMethod(name string, cf *classFile) (ca code_attribute) {
 func execute(ca code_attribute, cf *classFile) {
     s := new(Stack)
     s.Init(int(ca.max_stack))
-    locals := make([]int, ca.max_locals)
+    locals := make([]interface{}, ca.max_locals)
     code := ca.code
     pc := 0
 
@@ -970,13 +987,14 @@ func execute(ca code_attribute, cf *classFile) {
         op := code[pc]
         switch op {
             case LDC:
-                switch len(cf.constant_pool[code[pc+1]].info) {
+                pc++
+                switch len(cf.constant_pool[code[pc]].info) {
                     case 2:
-                        s.Push(int(binary.BigEndian.Uint16(cf.constant_pool[code[pc+1]].info)))
+                        s.Push(int(binary.BigEndian.Uint16(cf.constant_pool[code[pc]].info)))
                     case 4:
-                        s.Push(int(binary.BigEndian.Uint32(cf.constant_pool[code[pc+1]].info)))
+                        s.Push(int(binary.BigEndian.Uint32(cf.constant_pool[code[pc]].info)))
                 }
-                pc = pc + 2
+                pc++
             case ICONST_M1:
                 s.Push(-1)
                 pc++
@@ -1026,32 +1044,32 @@ func execute(ca code_attribute, cf *classFile) {
                 s.Push(int(code[pc+1]))
                 pc = pc + 2
             case SIPUSH:
-                getb := []byte{code[pc+1], code[pc+2]}
-                value := int(binary.BigEndian.Uint16(getb))
+                bytes := []byte{code[pc+1], code[pc+2]}
+                value := int(binary.BigEndian.Uint16(bytes))
                 s.Push(value)
                 pc = pc + 3
             case IADD:
                 o1 := s.Pop()
                 o2 := s.Pop()
-                result := o2 + o1
+                result := o2.(int) + o1.(int)
                 s.Push(result)
                 pc++
             case ISUB:
                 o1 := s.Pop()
                 o2 := s.Pop()
-                result := o2 - o1
+                result := o2.(int) - o1.(int)
                 s.Push(result)
                 pc++
             case IMUL:
                 o1 := s.Pop()
                 o2 := s.Pop()
-                result := o2 * o1
+                result := o2.(int) * o1.(int)
                 s.Push(result)
                 pc++
             case IDIV:
                 o1 := s.Pop()
                 o2 := s.Pop()
-                result := o2 / o1
+                result := o2.(int) / o1.(int)
                 s.Push(result)
                 pc++
             case GETSTATIC:
@@ -1066,8 +1084,8 @@ func execute(ca code_attribute, cf *classFile) {
                 pc = pc + 3
 
             case INVOKEVIRTUAL:
-                str := s.Pop()
-                fmt.Println(string(cf.constant_pool[str].info[2:]))
+                strIndex := s.Pop().(int)
+                fmt.Println(string(cf.constant_pool[strIndex].info[2:]))
                 pc = pc + 3
 
             case RETURN:
@@ -1089,8 +1107,8 @@ func main() {
         fileClass := fileName + ".class"
         fmt.Printf("  ClassFile: \"%s\"; ", fileClass)
 
-        readFile(fileClass, cf))
-        ca := findMethod("main", cf) // ACC_STATIC main ([Ljava/lang/String;)V
+        readFile(fileClass, cf)
+        ca := findMethod(ACC_PUBLIC | ACC_STATIC, "main([Ljava/lang/String;)V", cf) // ACC_STATIC main ([Ljava/lang/String;)V
         fmt.Println(ca.code)
         execute(ca, cf)
     }
