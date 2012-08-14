@@ -2,8 +2,8 @@ package main
 
 import (
     "fmt"
-    . "gvm"
     "os"
+    . "gvm"
 )
 
 func readSize(f *os.File) {
@@ -21,7 +21,6 @@ func readFile(fileClass string, cf *ClassFile) {
     readSize(f)
 
     r := NewClassReader(f, cf)
-    // decoder{file: f, bo: binary.BigEndian, cf: cf}
     r.ReadMagic()
     r.ReadVersion()
     r.ReadConstantPool()

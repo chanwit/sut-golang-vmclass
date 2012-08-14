@@ -16,19 +16,19 @@ func NewClassReader(f *os.File, cf *ClassFile) *ClassReader {
 
 func (d *ClassReader) ReadMagic() {
     binary.Read(d.file, d.bo, &(d.cf.magic))
-    fmt.Printf("  magic : %x\n", d.cf.magic)
+    _debugf("  magic : %x\n", d.cf.magic)
 }
 
 func (d *ClassReader) ReadVersion() {
     binary.Read(d.file, d.bo, &(d.cf.minor_version))
     binary.Read(d.file, d.bo, &(d.cf.major_version))
-    fmt.Printf("  minor version: %d\n", d.cf.minor_version)
-    fmt.Printf("  major version: %d\n", d.cf.major_version)
+    _debugf("  minor version: %d\n", d.cf.minor_version)
+    _debugf("  major version: %d\n", d.cf.major_version)
 }
 
 func (d *ClassReader) ReadConstantPool() {
     binary.Read(d.file, d.bo, &(d.cf.constant_pool_count))
-    fmt.Printf("Constant pool(%d):\n", d.cf.constant_pool_count)
+    _debugf("Constant pool(%d):\n", d.cf.constant_pool_count)
     d.cf.constant_pool = make([]cp_info, d.cf.constant_pool_count)
     for i := uint16(1); i < d.cf.constant_pool_count; i++ {
         var tag uint8
@@ -81,7 +81,7 @@ func (d *ClassReader) ReadConstantPool() {
             binary.BigEndian.PutUint16(info[0:2], length)
             binary.Read(d.file, d.bo, info[2:])
             d.cf.constant_pool[i] = cp_info{tag: tag, info: info}
-            fmt.Printf("  #%d = %s\n", i, info[2:])
+            _debugf("  #%d = %s\n", i, info[2:])
         case CONSTANT_MethodHandle:
             info := make([]byte, 3)
             binary.Read(d.file, d.bo, info)
@@ -100,45 +100,45 @@ func (d *ClassReader) ReadConstantPool() {
 
 func (d *ClassReader) ReadFlag() {
     binary.Read(d.file, d.bo, &(d.cf.access_flags))
-    fmt.Print("  flags:")
+    _debug("  flags:")
     accessFlags := d.cf.access_flags
     if accessFlags & ACC_PUBLIC == ACC_PUBLIC {
-        fmt.Print(" ACC_PUBLIC,")
+        _debug(" ACC_PUBLIC,")
     }
     if accessFlags & ACC_PRIVATE == ACC_PRIVATE {
-        fmt.Print(" ACC_PRIVATE,")
+        _debug(" ACC_PRIVATE,")
     }
     if accessFlags & ACC_PROTECTED == ACC_PROTECTED {
-        fmt.Print(" ACC_PROTECTED,")
+        _debug(" ACC_PROTECTED,")
     }
     if accessFlags & ACC_STATIC == ACC_STATIC {
-        fmt.Print(" ACC_STATIC,")
+        _debug(" ACC_STATIC,")
     }
     if accessFlags & ACC_FINAL == ACC_FINAL {
-        fmt.Print(" ACC_FINAL,")
+        _debug(" ACC_FINAL,")
     }
     if accessFlags & ACC_SUPER == ACC_SUPER {
-        fmt.Print(" ACC_SUPER,")
+        _debug(" ACC_SUPER,")
     }
     if accessFlags & ACC_VOLATILE == ACC_VOLATILE {
-        fmt.Print(" ACC_VOLATILE,")
+        _debug(" ACC_VOLATILE,")
     }
     if accessFlags & ACC_TRANSIENT == ACC_TRANSIENT {
-        fmt.Print(" ACC_TRANSIENT,")
+        _debug(" ACC_TRANSIENT,")
     }
     if accessFlags & ACC_INTERFACE == ACC_INTERFACE {
-        fmt.Print(" ACC_INTERFACE,")
+        _debug(" ACC_INTERFACE,")
     }
     if accessFlags & ACC_ABSTRACT == ACC_ABSTRACT {
-        fmt.Print(" ACC_ABSTRACT,")
+        _debug(" ACC_ABSTRACT,")
     }
     if accessFlags & ACC_SYNTHETIC == ACC_SYNTHETIC {
-        fmt.Print(" ACC_SYNTHETIC,")
+        _debug(" ACC_SYNTHETIC,")
     }
     if accessFlags & ACC_ENUM == ACC_ENUM {
-        fmt.Print(" ACC_ENUM,")
+        _debug(" ACC_ENUM,")
     }
-    fmt.Print("\b \n")
+    _debug("\b \n")
 }
 
 func (d *ClassReader) ReadClass() {
