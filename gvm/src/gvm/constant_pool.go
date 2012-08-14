@@ -156,3 +156,7 @@ type exception_table struct {
     handler_pc uint16
     catch_type uint16
 }
+
+func (cf *ClassFile) ConstantPool() []cp_info {
+    return cf.constant_pool
+}

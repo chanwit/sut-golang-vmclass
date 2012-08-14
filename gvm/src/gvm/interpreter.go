@@ -1,9 +1,8 @@
 package gvm
 
 import "encoding/binary"
-import "fmt"
 
-func Interpret(ca code_attribute, cf *ClassFile) {
+func Interpret(ca code_attribute, cp []cp_info) {
     // s := new(Stack)
     // s.Init(int(ca.max_stack))
     // locals := make([]interface{}, ca.max_locals)
@@ -18,11 +17,19 @@ func Interpret(ca code_attribute, cf *ClassFile) {
 
         switch op {
             case LDC:
-                switch len(cf.constant_pool[code[pc]].info) {
-                    case 2:
-                        s.Push(int(binary.BigEndian.Uint16(cf.constant_pool[code[pc]].info)))
-                    case 4:
-                        s.Push(int(binary.BigEndian.Uint32(cf.constant_pool[code[pc]].info)))
+                index := binary.BigEndian.Uint16(cp[code[pc]].info)
+                tag := cp[index].tag
+                switch tag {
+                    case CONSTANT_Utf8:
+                        s.Push(string(cp[index].info[2:]))
+                    case CONSTANT_Integer:
+                        value := binary.BigEndian.Uint32(cp[index].info)
+                        s.Push(int(value))
+                    // case CONSTANT_Class:
+                    // case CONSTANT_Float:
+                    // case CONSTANT_Long:
+                    // case CONSTANT_Double:
+                    // case CONSTANT_String:
                 }
                 pc++
 
@@ -69,7 +76,6 @@ func Interpret(ca code_attribute, cf *ClassFile) {
                 s.Push(int(code[pc]))
                 pc++
             case SIPUSH:
-                // bytes := []byte{code[pc+1], code[pc+2]}
                 value := int(binary.BigEndian.Uint16(code[pc:pc+2]))
                 s.Push(value)
                 pc = pc + 2
@@ -91,21 +97,54 @@ func Interpret(ca code_attribute, cf *ClassFile) {
                 s.Push(o2.(int) / o1.(int))
             case GETSTATIC:
                 value := binary.BigEndian.Uint16(code[pc:pc+2])
-                if cf.constant_pool[value].tag == CONSTANT_Fieldref {
-                    fmt.Print("CONSTANT_Fieldref : ")
-                    //fmt.Println("fieldref=", cf.constant_pool[value].info)
-                    //fmt.Println("class_index=", binary.BigEndian.Uint16(cf.constant_pool[value].info[:2]))
-                    //fmt.Println("name_and_type_index=", binary.BigEndian.Uint16(cf.constant_pool[value].info[2:]))
+                if cp[value].tag == CONSTANT_Fieldref {
+                    _debug("CONSTANT_Fieldref : ")
+                    _debug("fieldref=", cp[value].info)
+                    ownerIndex := binary.BigEndian.Uint16(cp[value].info[:2])
+                    nameAndTypeIndex := binary.BigEndian.Uint16(cp[value].info[2:])
+                    ownerClassIndex  := binary.BigEndian.Uint16(cp[ownerIndex].info[:2])
+                    nameIndex := binary.BigEndian.Uint16(cp[nameAndTypeIndex].info[:2])
+                    typeIndex := binary.BigEndian.Uint16(cp[nameAndTypeIndex].info[2:])
+
+                    ownerName := string(cp[ownerClassIndex].info[2:])
+                    fieldName := string(cp[nameIndex].info[2:])
+                    fieldTypeName := string(cp[typeIndex].info[2:])
+
+                    obj := CT(ownerName).staticFields[fieldName]
+                    s.Push(obj)
+
+                    // _info(ownerName)
+                    // _info(fieldName)
+                    _debug(fieldTypeName)
+                    // _info(cp[nameAndTypeIndex].info)
                 }
                 pc = pc + 2
 
             case INVOKEVIRTUAL:
-                strIndex := s.Pop().(int)
-                fmt.Println(string(cf.constant_pool[strIndex].info[2:]))
+                _info("INVOKEVIRTUAL")
+                methodRefIndex := binary.BigEndian.Uint16(code[pc:pc+2])
+                ownerIndex := binary.BigEndian.Uint16(cp[methodRefIndex].info[:2])
+                nameAndTypeIndex := binary.BigEndian.Uint16(cp[methodRefIndex].info[2:])
+
+                ownerClassIndex := binary.BigEndian.Uint16(cp[ownerIndex].info)
+
+                _info(cp[nameAndTypeIndex].info)
+
+                nameIndex := binary.BigEndian.Uint16(cp[nameAndTypeIndex].info[:2])
+                typeIndex := binary.BigEndian.Uint16(cp[nameAndTypeIndex].info[2:])
+
+                owner := string(cp[ownerClassIndex].info[2:])
+                _info(owner)
+                _info(string(cp[nameIndex].info[2:]))
+                _info(string(cp[typeIndex].info[2:]))
+                switch value := s.Pop().(type) {
+                    case string:
+                        _info(value)
+                }
                 pc = pc + 2
 
             case RETURN:
-                fmt.Println(s.locals)
+                _info(s.locals)
                 return
         }
     }

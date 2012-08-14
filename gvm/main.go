@@ -7,8 +7,8 @@ import (
 )
 
 func readSize(f *os.File) {
-    state, _ := f.Stat()
-    fmt.Printf("size %d bytes\n", state.Size())
+    // state, _ := f.Stat()
+    // _debugf("size %d bytes\n", state.Size())
 }
 
 func readFile(fileClass string, cf *ClassFile) {
@@ -41,10 +41,13 @@ func main() {
     } else {
         fileName  := os.Args[1]
         fileClass := fileName + ".class"
-        fmt.Printf("  ClassFile: \"%s\"; ", fileClass)
+        // _debugf("  ClassFile: \"%s\"; ", fileClass)
         readFile(fileClass, cf)
+
+        ClassTableInit()
+
         ca := FindMethod(ACC_PUBLIC | ACC_STATIC, "main([Ljava/lang/String;)V", cf)
-        Interpret(ca, cf)
+        Interpret(ca, cf.ConstantPool())
     }
 
 }
