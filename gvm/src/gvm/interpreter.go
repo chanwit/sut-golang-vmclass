@@ -132,11 +132,17 @@ func Interpret(ca code_attribute, cp []cp_info) {
 
                 nameIndex := binary.BigEndian.Uint16(cp[nameAndTypeIndex].info[:2])
                 typeIndex := binary.BigEndian.Uint16(cp[nameAndTypeIndex].info[2:])
-
                 owner := string(cp[ownerClassIndex].info[2:])
+
                 _info(owner)
-                _info(string(cp[nameIndex].info[2:]))
-                _info(string(cp[typeIndex].info[2:]))
+
+                desc := string(cp[typeIndex].info[2:])
+                signature := string(cp[nameIndex].info[2:]) + desc
+
+                _info(signature)
+
+                // method := CT(owner).methods[signature]
+
                 switch value := s.Pop().(type) {
                     case string:
                         _info(value)
