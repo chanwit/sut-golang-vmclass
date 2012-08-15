@@ -745,22 +745,22 @@ func (d *ClassReader) ReadMethod() {
     }
 }
 
-func (d *ClassReader) ReadAttribute() {
-    binary.Read(d.file, d.bo, &(d.cf.attributes_count))
-    _debugf("attribute count : %d\n", d.cf.attributes_count)
-    d.cf.attributes = make([]attribute_info, d.cf.attributes_count)
-    for i := uint16(0); i < d.cf.attributes_count; i++ {
+func (cr *ClassReader) ReadAttribute() {
+    binary.Read(cr.file, cr.bo, &(cr.cf.attributes_count))
+    _debugf("attribute count : %d\n", cr.cf.attributes_count)
+    cr.cf.attributes = make([]attribute_info, cr.cf.attributes_count)
+    for i := uint16(0); i < cr.cf.attributes_count; i++ {
         var name_index uint16
         var length uint32
-        binary.Read(d.file, d.bo, &name_index)
-        binary.Read(d.file, d.bo, &length)
+        binary.Read(cr.file, cr.bo, &name_index)
+        binary.Read(cr.file, cr.bo, &length)
         info := make([]uint8, length)
-        binary.Read(d.file, d.bo, &info)
-        d.cf.attributes[i] = attribute_info{attribute_name_index: name_index,
+        binary.Read(cr.file, cr.bo, &info)
+        cr.cf.attributes[i] = attribute_info{attribute_name_index: name_index,
                                             attribute_length: length,
                                             info: info}
 
-        att := d.cf.constant_pool[name_index]
+        att := cr.cf.constant_pool[name_index]
         fmt.Println(att, string(att.info[2:]))
     }
 }

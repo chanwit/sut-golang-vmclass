@@ -1,8 +1,6 @@
 package gvm
 
-
 var ClassTable = make(map[string]*Class)
-// var fieldTable map[string]*Object
 
 type Class struct {
     StaticFields map[string]*Object
