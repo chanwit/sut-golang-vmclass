@@ -5,7 +5,7 @@ import (
     "fmt"
     . "gvm"
     "os"
-    "strings"
+    //"strings"
 )
 
 type classFile struct {
@@ -1077,19 +1077,13 @@ func execute(ca code_attribute, cf *classFile) {
                 //class := binary.BigEndian.Uint16(methodRef[:2])
                 nameAndType := binary.BigEndian.Uint16(methodRef[2:])
 
-                method := binary.BigEndian.Uint16(cf.constant_pool[nameAndType].info[:2])
-                signature := binary.BigEndian.Uint16(cf.constant_pool[nameAndType].info[2:])
-
-                returnType := string(cf.constant_pool[signature].info[2:])
-                returnType = returnType[len(returnType)-1:len(returnType)]
-
-                argument := string(cf.constant_pool[signature].info[3:])
-                argument = argument[:strings.Index(argument, ";")]
+                method := string(cf.constant_pool[binary.BigEndian.Uint16(cf.constant_pool[nameAndType].info[:2])].info[2:])
+                signature := string(cf.constant_pool[binary.BigEndian.Uint16(cf.constant_pool[nameAndType].info[2:])].info[2:])
 
                 str := s.Pop()
                 varType := cf.constant_pool[str].tag
 
-                if string(cf.constant_pool[method].info[2:]) == "println" && returnType == "V" && argument == "Ljava/lang/String" && varType == CONSTANT_Utf8 {
+                if method == "println" && signature == "(Ljava/lang/String;)V" && varType == CONSTANT_Utf8 {
                     fmt.Println(string(cf.constant_pool[str].info[2:]))
                 }
 
