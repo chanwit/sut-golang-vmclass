@@ -1205,7 +1205,7 @@ func execuse(ca code_attribute,cf *classfile) {
 					s.push(uint32(val))
 					pc++
 			case sipush:
-						pc++
+					pc++
 					va:=make([]byte,4)
 						va[1]=code[pc] //Hight Byte
 							pc++
@@ -1213,10 +1213,75 @@ func execuse(ca code_attribute,cf *classfile) {
 					var sum uint32
 					sum = binary.LittleEndian.Uint32(va[:4]) //mustbe 4 bytes
 					s.push(sum)
+					pc++
+			case ldc:
+				pc++
+					index := code[pc]
+			//	fmt.Println("index:",index)
+				d := cf.constant_pool[index]
+				nextindex := binary.BigEndian.Uint16(d.info[:])
+			//	fmt.Println(string(cf.constant_pool[nextindex].info[2:])) 
+				s.push(uint32(nextindex))
+				pc++
+			case getstatic:
+				pc++
+				value:=make([]byte,4)
+					value[1]=code[pc]
 						pc++
+					value[0]=code[pc]
+				var all uint32
+				all = binary.LittleEndian.Uint32(value[:4])
+			//	fmt.Println(all)
+   				s.push(all)
+   				pc++
+			case invokevirtual :
+				pc++
+				value:=make([]byte,4)
+					value[1]=code[pc]
+						pc++
+					value[0]=code[pc]
+				var all uint32
+				all = binary.LittleEndian.Uint32(value[:4])	//4
+			//	fmt.Println(all)
+					firststep := cf.constant_pool[all]	//27,28
+					numfirst := binary.BigEndian.Uint16(firststep.info[:2])	//27
+					numsec := binary.BigEndian.Uint16(firststep.info[2:4]) 	//28
+						innumfirst := cf.constant_pool[numfirst].info[:] 		//36
+						innumsec :=	cf.constant_pool[numsec].info[:2] 			//37
+						innumsec1:= cf.constant_pool[numsec].info[2:4]			//38
+							innerfirst := binary.BigEndian.Uint16(innumfirst)
+							innersec := binary.BigEndian.Uint16(innumsec)
+							innersec1 := binary.BigEndian.Uint16(innumsec1)
+			//	fmt.Println(string(cf.constant_pool[innerfirst].info[2:]), string(cf.constant_pool[innersec].info[2:]), string(cf.constant_pool[innersec1].info[2:]))
+					count:=0
+				if string(cf.constant_pool[innersec].info[2:])=="println"{
+					//fmt.Println("Yes:Println")
+					count++
+				}
+				if string(cf.constant_pool[innersec1].info[2:])=="(Ljava/lang/String;)V"{
+					//fmt.Println("Yes:String")
+					count++
+				}
+				if string(cf.constant_pool[innersec1].info[2:])=="(I)V"{
+					//fmt.Println("Yes:Int")
+					
+				}
+				if string(cf.constant_pool[innerfirst].info[2:])=="java/io/PrintStream"{
+					//fmt.Println("Yes:PrintStream")
+					count++
+				}
+				if count == 3{
+					retrived:=s.pop()
+					fmt.Println(string(cf.constant_pool[retrived].info[2:]))
+				}else if count ==2{ // int
+					retrived:=s.pop()
+					fmt.Println(int(retrived))
+				}
+			
+   				pc++	
 			case return_x:
 				fmt.Println(locals)
-					//fmt.Printf("3: %d\n",int(locals[3])) //special for Sub! set index to last
+				//	fmt.Printf("3: %d\n",int(locals[ca.max_locals-1])) //special for Sub! set index to last
 				pc++
 				return
 			}	
