@@ -114,34 +114,30 @@ func Interpret(ca code_attribute, cp []cp_info) {
 
                     obj := CT(ownerName).staticFields[fieldName]
                     s.Push(obj)
-
-                    // _info(ownerName)
-                    // _info(fieldName)
                     _debug(fieldTypeName)
-                    // _info(cp[nameAndTypeIndex].info)
                 }
                 pc = pc + 2
 
             case INVOKEVIRTUAL:
-                _info("INVOKEVIRTUAL")
+                _debug("INVOKEVIRTUAL")
                 methodRefIndex := binary.BigEndian.Uint16(code[pc:pc+2])
                 ownerIndex := binary.BigEndian.Uint16(cp[methodRefIndex].info[:2])
                 nameAndTypeIndex := binary.BigEndian.Uint16(cp[methodRefIndex].info[2:])
 
                 ownerClassIndex := binary.BigEndian.Uint16(cp[ownerIndex].info)
 
-                _info(cp[nameAndTypeIndex].info)
+                _debug(cp[nameAndTypeIndex].info)
 
                 nameIndex := binary.BigEndian.Uint16(cp[nameAndTypeIndex].info[:2])
                 typeIndex := binary.BigEndian.Uint16(cp[nameAndTypeIndex].info[2:])
                 owner := string(cp[ownerClassIndex].info[2:])
 
-                _info(owner)
+                _debug(owner)
 
                 desc := string(cp[typeIndex].info[2:])
                 signature := string(cp[nameIndex].info[2:]) + desc
 
-                _info(signature)
+                _debug(signature)
 
                 method := CT(owner).methods[signature]
                 args := make([]*object, method.getArgCount())
@@ -156,7 +152,7 @@ func Interpret(ca code_attribute, cp []cp_info) {
                 pc = pc + 2
 
             case RETURN:
-                _info(s.locals)
+                _debug(s.locals)
                 return
         }
     }
