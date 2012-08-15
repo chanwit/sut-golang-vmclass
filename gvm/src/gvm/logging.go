@@ -16,6 +16,13 @@ func _info(a ...interface{}) {
     }
 }
 
+func _infof(s string, a ...interface{}) {
+    if LoggingLevel == INFO {
+        fmt.Printf(s, a)
+    }
+}
+
+
 func _debug(a ...interface{}) {
     if(LoggingLevel == DEBUG) {
         fmt.Println(a)

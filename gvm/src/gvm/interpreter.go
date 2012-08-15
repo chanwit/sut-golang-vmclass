@@ -21,7 +21,9 @@ func Interpret(ca code_attribute, cp []cp_info) {
                 tag := cp[index].tag
                 switch tag {
                     case CONSTANT_Utf8:
-                        s.Push(string(cp[index].info[2:]))
+                        obj := &object{class:"java/lang/String",
+                                       native: string(cp[index].info[2:])}
+                        s.Push(obj)
                     case CONSTANT_Integer:
                         value := binary.BigEndian.Uint32(cp[index].info)
                         s.Push(int(value))
@@ -141,11 +143,15 @@ func Interpret(ca code_attribute, cp []cp_info) {
 
                 _info(signature)
 
-                // method := CT(owner).methods[signature]
-
-                switch value := s.Pop().(type) {
-                    case string:
-                        _info(value)
+                method := CT(owner).methods[signature]
+                args := make([]*object, method.getArgCount())
+                for i := 0; i < method.getArgCount(); i++ {
+                    args[i] = s.Pop().(*object)
+                }
+                recv := s.Pop().(*object)
+                void, ret := method.invoke(recv, args)
+                if !void {
+                    s.Push(ret)
                 }
                 pc = pc + 2
 
