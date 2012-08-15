@@ -29,3 +29,15 @@ func FindMethod(flags uint16, signature string, cf *ClassFile) (ca code_attribut
     }
     return
 }
+
+func u16(b []byte) uint16 {
+    return uint16(b[1]) | uint16(b[0])<<8
+}
+
+func u32(b []byte) uint32 {
+    return uint32(b[3]) | uint32(b[2])<<8 | uint32(b[1])<<16 | uint32(b[0])<<24
+}
+
+func i32(b []byte) int {
+    return int(uint32(b[3]) | uint32(b[2])<<8 | uint32(b[1])<<16 | uint32(b[0])<<24)
+}
