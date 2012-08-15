@@ -5,6 +5,7 @@ import (
     "fmt"
     . "gvm"
     "os"
+    "strings"
 )
 
 type classFile struct {
@@ -970,11 +971,13 @@ func execute(ca code_attribute, cf *classFile) {
         op := code[pc]
         switch op {
             case LDC:
-                switch len(cf.constant_pool[code[pc+1]].info) {
-                    case 2:
-                        s.Push(int(binary.BigEndian.Uint16(cf.constant_pool[code[pc+1]].info)))
-                    case 4:
-                        s.Push(int(binary.BigEndian.Uint32(cf.constant_pool[code[pc+1]].info)))
+                //fmt.Println(code[pc], code[pc+1])
+                if len(cf.constant_pool[code[pc+1]].info) == 2 {
+                    s.Push(int(binary.BigEndian.Uint16(cf.constant_pool[code[pc+1]].info)))
+                }else if len(cf.constant_pool[code[pc+1]].info) == 4 {
+                    s.Push(int(binary.BigEndian.Uint32(cf.constant_pool[code[pc+1]].info)))
+                }else if len(cf.constant_pool[code[pc+1]].info) > 4 {
+                    //s.Push(cf.constant_pool[code[pc+1]].info)
                 }
                 pc = pc + 2
             case ICONST_M1:
@@ -998,6 +1001,8 @@ func execute(ca code_attribute, cf *classFile) {
             case ICONST_5:
                 s.Push(5)
                 pc++
+            //case ASTORE_1:
+            //    locals[1] =
             case ISTORE:
                 locals[code[pc+1]] = s.Pop()
                 pc = pc + 2
@@ -1066,8 +1071,28 @@ func execute(ca code_attribute, cf *classFile) {
                 pc = pc + 3
 
             case INVOKEVIRTUAL:
+                getb := []byte{code[pc+1], code[pc+2]}
+                value := binary.BigEndian.Uint16(getb)
+                methodRef := cf.constant_pool[value].info
+                //class := binary.BigEndian.Uint16(methodRef[:2])
+                nameAndType := binary.BigEndian.Uint16(methodRef[2:])
+
+                method := binary.BigEndian.Uint16(cf.constant_pool[nameAndType].info[:2])
+                signature := binary.BigEndian.Uint16(cf.constant_pool[nameAndType].info[2:])
+
+                returnType := string(cf.constant_pool[signature].info[2:])
+                returnType = returnType[len(returnType)-1:len(returnType)]
+
+                argument := string(cf.constant_pool[signature].info[3:])
+                argument = argument[:strings.Index(argument, ";")]
+
                 str := s.Pop()
-                fmt.Println(string(cf.constant_pool[str].info[2:]))
+                varType := cf.constant_pool[str].tag
+
+                if string(cf.constant_pool[method].info[2:]) == "println" && returnType == "V" && argument == "Ljava/lang/String" && varType == CONSTANT_Utf8 {
+                    fmt.Println(string(cf.constant_pool[str].info[2:]))
+                }
+
                 pc = pc + 3
 
             case RETURN:
