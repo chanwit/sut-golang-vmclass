@@ -18,8 +18,7 @@ func Interpret(ca code_attribute, cp []cp_info) {
         switch op {
             case LDC:
                 index := binary.BigEndian.Uint16(cp[code[pc]].info)
-                tag := cp[index].tag
-                switch tag {
+                switch cp[index].tag {
                     case CONSTANT_Utf8:
                         obj := &Object{ClassName:"java/lang/String",
                                        Native: string(cp[index].info[2:])}
@@ -146,8 +145,7 @@ func Interpret(ca code_attribute, cp []cp_info) {
                     args[i] = s.Pop().(*Object)
                 }
                 recv := s.Pop().(*Object)
-                void, ret := method.Invoke(recv, args)
-                if !void {
+                if void, ret := method.Invoke(recv, args); !void {
                     s.Push(ret)
                 }
                 pc = pc + 2
