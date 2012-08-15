@@ -21,8 +21,8 @@ func Interpret(ca code_attribute, cp []cp_info) {
                 tag := cp[index].tag
                 switch tag {
                     case CONSTANT_Utf8:
-                        obj := &object{class:"java/lang/String",
-                                       native: string(cp[index].info[2:])}
+                        obj := &Object{ClassName:"java/lang/String",
+                                       Native: string(cp[index].info[2:])}
                         s.Push(obj)
                     case CONSTANT_Integer:
                         value := binary.BigEndian.Uint32(cp[index].info)
@@ -112,7 +112,7 @@ func Interpret(ca code_attribute, cp []cp_info) {
                     fieldName := string(cp[nameIndex].info[2:])
                     fieldTypeName := string(cp[typeIndex].info[2:])
 
-                    obj := CT(ownerName).staticFields[fieldName]
+                    obj := CT(ownerName).StaticFields[fieldName]
                     s.Push(obj)
                     _debug(fieldTypeName)
                 }
@@ -139,13 +139,14 @@ func Interpret(ca code_attribute, cp []cp_info) {
 
                 _debug(signature)
 
-                method := CT(owner).methods[signature]
-                args := make([]*object, method.getArgCount())
-                for i := 0; i < method.getArgCount(); i++ {
-                    args[i] = s.Pop().(*object)
+                method := CT(owner).Methods[signature]
+                argCount := method.GetArgCount()
+                args := make([]*Object, argCount)
+                for i := 0; i < argCount; i++ {
+                    args[i] = s.Pop().(*Object)
                 }
-                recv := s.Pop().(*object)
-                void, ret := method.invoke(recv, args)
+                recv := s.Pop().(*Object)
+                void, ret := method.Invoke(recv, args)
                 if !void {
                     s.Push(ret)
                 }

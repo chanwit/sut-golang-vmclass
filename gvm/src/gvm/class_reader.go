@@ -75,7 +75,7 @@ func (d *ClassReader) ReadConstantPool() {
             binary.Read(d.file, d.bo, info)
             d.cf.constant_pool[i] = cp_info{tag: tag, info: info}
         case CONSTANT_Utf8:
-            var length uint16
+            length := uint16(0)
             binary.Read(d.file, d.bo, &(length))
             info := make([]byte, 2+length)
             binary.BigEndian.PutUint16(info[0:2], length)

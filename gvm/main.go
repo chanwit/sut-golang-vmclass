@@ -4,6 +4,9 @@ import (
     "fmt"
     "os"
     . "gvm"
+
+    "java_io"
+    "java_lang"
 )
 
 func readSize(f *os.File) {
@@ -44,7 +47,8 @@ func main() {
         // _debugf("  ClassFile: \"%s\"; ", fileClass)
         readFile(fileClass, cf)
 
-        ClassTableInit()
+        java_lang.Init(ClassTable)
+        java_io.Init(ClassTable)
 
         ca := FindMethod(ACC_PUBLIC | ACC_STATIC, "main([Ljava/lang/String;)V", cf)
         Interpret(ca, cf.ConstantPool())
