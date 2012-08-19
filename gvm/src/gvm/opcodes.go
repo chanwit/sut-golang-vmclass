@@ -1,7 +1,7 @@
 package gvm
 
 const (
-    NOP         = iota
+    NOP             = iota
     ACONST_NULL
     ICONST_M1
     ICONST_0
@@ -204,7 +204,7 @@ const (
     GOTO_W
     JSR_W
     BREAKPOINT
-    //(NO NAME)         = 0XCB-FD
-    IMPDEP1 = 254
-    IMPDEP2 = 255
+    //(NO NAME)     = 0XCB-FD
+    IMPDEP1         = 254
+    IMPDEP2         = 255
 )
