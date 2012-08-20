@@ -5,6 +5,7 @@ import ( "fmt"
 		"os"
 		"io"	
 		"encoding/binary"
+		//"src/gvm"
 		//"bytes"
 )
 
@@ -214,7 +215,7 @@ invokespecial
 invokestatic
 invokeinterface
 invokedynamic
-new
+New
 newarray
 anewarray
 arraylength
@@ -1190,7 +1191,6 @@ func execuse(ca code_attribute,cf *classfile) {
 				var all uint32
 				ccon := cf.constant_pool
 				all = binary.LittleEndian.Uint32(value[:4])	//4
-			//	fmt.Println(all)
 					firststep := ccon[all]	//27,28
 					numfirst := binary.BigEndian.Uint16(firststep.info[:2])	//27
 					numsec := binary.BigEndian.Uint16(firststep.info[2:4]) 	//28
@@ -1200,7 +1200,7 @@ func execuse(ca code_attribute,cf *classfile) {
 							innerfirst := binary.BigEndian.Uint16(innumfirst)
 							innersec := binary.BigEndian.Uint16(innumsec)
 							innersec1 := binary.BigEndian.Uint16(innumsec1)
-			//	fmt.Println(string(cf.constant_pool[innerfirst].info[2:]), string(cf.constant_pool[innersec].info[2:]), string(cf.constant_pool[innersec1].info[2:]))
+
 				printstream := string(ccon[innerfirst].info[2:])
 				printline := string(ccon[innersec].info[2:])
 				datatype := string(ccon[innersec1].info[2:])
@@ -1210,9 +1210,30 @@ func execuse(ca code_attribute,cf *classfile) {
 				}
 				if (printstream=="java/io/PrintStream")&&(printline=="println")&&(datatype=="(I)V"){
 					retrived:=s.pop().(int)
-					fmt.Println(int(retrived))
+					fmt.Println(retrived)
 				}
-   				pc++	
+   				pc++
+   			case New:
+   				pc++
+   				value:=make([]byte,4)
+					value[1]=code[pc]
+					value[0]=code[pc+1]
+				var all uint32
+				//ccon := cf.constant_pool
+				all = binary.LittleEndian.Uint32(value[:4])
+   				fmt.Println("New: ",all)
+   				pc++
+   				fmt.Println(pc)
+   			case invokespecial:
+   				pc++
+   				pc++
+   				pc++
+   			case dup:
+   				fmt.Println(pc)
+   				top := s.pop()
+   				s.push(top)
+   				s.push(top)
+   				pc++
 			case return_x:
 				fmt.Println(locals)
 				pc++
