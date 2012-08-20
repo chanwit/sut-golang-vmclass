@@ -516,6 +516,10 @@ func (d *decoder) readConstantPool() {
 			desindex:=binary.BigEndian.Uint16(check.info[2:4])
 			fmt.Printf("#%d = NameAndType\t#%d:#%d\t// ",j,nameindex,desindex)
 			fmt.Printf("%q:%s\n",string(d.cf.constant_pool[nameindex].info[2:]),string(d.cf.constant_pool[desindex].info[2:]))
+		case CONSTANT_String :
+			stringindex := binary.BigEndian.Uint16(check.info[:])
+			fmt.Printf("#%d = String\t\t#%d\t// ",j,stringindex)
+			fmt.Printf("%s\n",string(d.cf.constant_pool[stringindex].info[2:]))
 		case CONSTANT_Utf8 :
 			fmt.Printf("#%d = Utf8\t\t%s\n",j,check.info[2:])
 
@@ -742,59 +746,7 @@ func (d *decoder) readMethod() {
 					}
 	}
 }
-								/*
-									ca.exception_table_length=d.bo.Uint16(info[8+ca.code_length:10+ca.code_length])
-									ca.exception_tables=make([]exception_table,ca.exception_table_length)
-										// loopfor exception
-										for k:=uint16(0) ;k < ca.exception_table_length ;k++{}
-
-										index:=uint16(ca.code_length)+ca.exception_table_length // Starting Point of Attributes count.
-									ca.attributes_count=d.bo.Uint16(info[index+10:index+12])
-									ca.attributes=make([]LineNumberTable_attribute,ca.attributes_count)
-										var lnt LineNumberTable_attribute
-										for l:=uint16(0) ;l < ca.attributes_count ; l++{
-											var nameindex 			uint16
-											var attributelength 	uint32
-											nameindex = d.bo.Uint16(info[index+12:index+14])
-											attributelength = d.bo.Uint32(info[index+14:index+18])
-											lnt.attribute_name_index = nameindex
-											lnt.attribute_length = attributelength
-											lnt.line_number_table_length = d.bo.Uint16(info[index+18:index+20])
-											lnt.line_number_tables = make([]line_number_table, lnt.line_number_table_length)
-											fmt.Println("(a)", string(d.cf.constant_pool[nameindex].info[2:]))
-											for o := uint16(0); o < lnt.line_number_table_length; o++ {
-												var startpc uint16
-												var lineNumber uint16
-												startpc = d.bo.Uint16(info[index+20+(o*4):index+22+(o*4)])
-												lineNumber = d.bo.Uint16(info[index+22+(o*4):index+24+(o*4)])
-												lnt.line_number_tables[o] = line_number_table { start_pc:startpc, line_number:lineNumber }
-												fmt.Println("line",lineNumber,":", startpc)
-											}
-											d.cf.method[i].attributes[j].line_number_tables[l] = LineNumberTable_attribute {
-												attribute_name_index:lnt.attribute_name_index, 
-												attribute_length:lnt.attribute_length,
-												line_number_table_length:lnt.line_number_table_length,
-												line_number_tables:d.cf.method[i].attributes[j].line_number_table_att[l].line_number_tables}
-										}
 								
-
-								}
-								d.cf.method[i].attributes[j]=code_attribute{
-									attribute_name_index:ca.attribute_name_index,
-									attribute_length:ca.attribute_length,
-									max_stack:ca.max_stack,
-									max_locals:ca.max_locals,
-									code_length:ca.code_length,
-									code:ca.code,
-									exception_table_length:ca.exception_table_length,
-									exception_tables:ca.exception_tables,
-									attributes_count:ca.attributes_count,
-									attributes:ca.attributes}		
-						
-								
-					}	
-	}	
-} */
 func lookupcode(ca []uint8,length uint32) {
    	//fmt.Printf("\n%x\n",ca[:1])
    	var m = make(map[int]string)
@@ -1010,15 +962,15 @@ for k:=203 ; k<254; k++{
 	checkTank := 0		
 for j:=uint32(0) ;j<length ;j++{
 	if checkTank==1{
-		keepindex := ca[j:j+1]
+		//keepindex := ca[j:j+1]
 		 checkTank=0
 		 j=j
-		 fmt.Println("keepindex 1 : = ",keepindex)
+		 //fmt.Println("keepindex 1 : = ",keepindex)
 	}else if checkTank==2{
-		keepindex := ca[j:j+2]
+		//keepindex := ca[j:j+2]
 		 checkTank=0
 		 j=j+1
-		 fmt.Println("keepindex 2 : = ",keepindex)
+		// fmt.Println("keepindex 2 : = ",keepindex)
 	}else{
 		t := ca[j:j+1]
 		s := make([]interface{}, len(t))
@@ -1096,11 +1048,11 @@ func openfile(filename string,cf *classfile) {
 }
 
 func findMethod(name string, cf *classfile) (ca code_attribute) {
-	fmt.Println("Hey")
+	
 	for i := uint16(0); i < cf.method_count; i++ {
 		met := cf.constant_pool[cf.method[i].name_index]
 		if string(met.info[2:]) == name {
-			fmt.Println("Now found main")
+			
 			for j := uint16(0); j < cf.method[i].attributes_count; j++ {
 				attName := cf.constant_pool[cf.method[i].attributes[j].attribute_name_index]
 				if string(attName.info[2:]) == "Code" {
@@ -1112,18 +1064,18 @@ func findMethod(name string, cf *classfile) (ca code_attribute) {
 	return
 }
 type stack struct{
-	data	[]uint32
+	data	[]interface{} //[]uint32
 	tos		int
 }
 func (s *stack) init(size int) {
-	s.data = make([]uint32,size)
+	s.data = make([]interface{},size)
 	s.tos = -1
 }
-func (s *stack) push(u uint32) {
+func (s *stack) push(u interface{}) {
 	s.tos = s.tos+1
 	s.data[s.tos] = u
 }
-func (s *stack) pop()(u uint32) {
+func (s *stack) pop()(u interface{}) {
 	u = s.data[s.tos]
 	s.tos=s.tos-1
 	return
@@ -1132,7 +1084,7 @@ func execuse(ca code_attribute,cf *classfile) {
 	code:=ca.code
 	s := &stack{}
 	s.init(int(ca.max_stack))
-	locals := make([]uint32, ca.max_locals)
+	locals := make([]interface{}, ca.max_locals)
 	pc:=0
 	for {
 		op := code[pc]
@@ -1178,31 +1130,27 @@ func execuse(ca code_attribute,cf *classfile) {
 			case iadd:
 					o1:=s.pop()
 					o2:=s.pop()
-					result:=o2+o1
-					s.push(result)
+					s.push(o2.(int)+o1.(int))
 					pc++
 			case isub:
 					o1:=s.pop()
 					o2:=s.pop()
-					result:=o2-o1
-					s.push(result)
+					s.push(o2.(int)-o1.(int))
 					pc++
 			case imul:
 					o1 := s.pop()
 					o2 := s.pop()
-					result := o2*o1
-					s.push(result)
+					s.push(o2.(int)*o1.(int))
 					pc++
 			case idiv: // Need to fixed Divided By Zero
 					o1 := s.pop()
 					o2 := s.pop()
-						result := o2/o1
-						s.push(result)
-						pc++
+					s.push(o2.(int)/o1.(int))
+					pc++
 			case bipush:
 					pc++
 					val:=code[pc]
-					s.push(uint32(val))
+					s.push(int(val))
 					pc++
 			case sipush:
 					pc++
@@ -1211,8 +1159,8 @@ func execuse(ca code_attribute,cf *classfile) {
 							pc++
 						va[0]=code[pc] //Low Byte
 					var sum uint32
-					sum = binary.LittleEndian.Uint32(va[:4]) //mustbe 4 bytes
-					s.push(sum)
+					sum = (binary.LittleEndian.Uint32(va[:4])) //mustbe 4 bytes
+					s.push(int(sum))
 					pc++
 			case ldc:
 				pc++
@@ -1221,7 +1169,7 @@ func execuse(ca code_attribute,cf *classfile) {
 				d := cf.constant_pool[index]
 				nextindex := binary.BigEndian.Uint16(d.info[:])
 			//	fmt.Println(string(cf.constant_pool[nextindex].info[2:])) 
-				s.push(uint32(nextindex))
+				s.push(int(nextindex))
 				pc++
 			case getstatic:
 				pc++
@@ -1229,10 +1177,9 @@ func execuse(ca code_attribute,cf *classfile) {
 					value[1]=code[pc]
 						pc++
 					value[0]=code[pc]
-				var all uint32
-				all = binary.LittleEndian.Uint32(value[:4])
-			//	fmt.Println(all)
-   				s.push(all)
+			//	var all uint32
+			//	all = binary.LittleEndian.Uint32(value[:4])
+   			//	s.push(all)
    				pc++
 			case invokevirtual :
 				pc++
@@ -1241,60 +1188,36 @@ func execuse(ca code_attribute,cf *classfile) {
 						pc++
 					value[0]=code[pc]
 				var all uint32
+				ccon := cf.constant_pool
 				all = binary.LittleEndian.Uint32(value[:4])	//4
 			//	fmt.Println(all)
-					firststep := cf.constant_pool[all]	//27,28
+					firststep := ccon[all]	//27,28
 					numfirst := binary.BigEndian.Uint16(firststep.info[:2])	//27
 					numsec := binary.BigEndian.Uint16(firststep.info[2:4]) 	//28
-						innumfirst := cf.constant_pool[numfirst].info[:] 		//36
-						innumsec :=	cf.constant_pool[numsec].info[:2] 			//37
-						innumsec1:= cf.constant_pool[numsec].info[2:4]			//38
+						innumfirst := ccon[numfirst].info[:] 		//36
+						innumsec :=	ccon[numsec].info[:2] 			//37
+						innumsec1:= ccon[numsec].info[2:4]			//38
 							innerfirst := binary.BigEndian.Uint16(innumfirst)
 							innersec := binary.BigEndian.Uint16(innumsec)
 							innersec1 := binary.BigEndian.Uint16(innumsec1)
 			//	fmt.Println(string(cf.constant_pool[innerfirst].info[2:]), string(cf.constant_pool[innersec].info[2:]), string(cf.constant_pool[innersec1].info[2:]))
-					count:=0
-				if string(cf.constant_pool[innersec].info[2:])=="println"{
-					//fmt.Println("Yes:Println")
-					count++
+				printstream := string(ccon[innerfirst].info[2:])
+				printline := string(ccon[innersec].info[2:])
+				datatype := string(ccon[innersec1].info[2:])
+				if (printstream=="java/io/PrintStream")&&(printline=="println")&&(datatype=="(Ljava/lang/String;)V"){
+					retrived:=s.pop().(int)
+					fmt.Println(string(ccon[retrived].info[2:]))
 				}
-				if string(cf.constant_pool[innersec1].info[2:])=="(Ljava/lang/String;)V"{
-					//fmt.Println("Yes:String")
-					count++
-				}
-				if string(cf.constant_pool[innersec1].info[2:])=="(I)V"{
-					//fmt.Println("Yes:Int")
-					
-				}
-				if string(cf.constant_pool[innerfirst].info[2:])=="java/io/PrintStream"{
-					//fmt.Println("Yes:PrintStream")
-					count++
-				}
-				if count == 3{
-					retrived:=s.pop()
-					fmt.Println(string(cf.constant_pool[retrived].info[2:]))
-				}else if count ==2{ // int
-					retrived:=s.pop()
+				if (printstream=="java/io/PrintStream")&&(printline=="println")&&(datatype=="(I)V"){
+					retrived:=s.pop().(int)
 					fmt.Println(int(retrived))
 				}
-			
    				pc++	
 			case return_x:
 				fmt.Println(locals)
-				//	fmt.Printf("3: %d\n",int(locals[ca.max_locals-1])) //special for Sub! set index to last
 				pc++
 				return
 			}	
-						//case invokevirtual:
-						//	pc++
-						//	ib1:=code[pc]
-						//	pc++
-						//	ib2:=code[pc]
-						//	ib:=(ib1 << 8)+ib2
-						//	cf.constant_pool[ib]
-						//case getstatic:
-	
-
 		}
 }
 
@@ -1307,7 +1230,7 @@ func main() {
 	if len(os.Args)==1 {
 			filename ="file not found"
 	}else{
-		filename=os.Args[1]
+		filename=os.Args[1]+".class"
 		openfile(filename,cf)
 		ca:=findMethod("main",cf)
 		//fmt.Println("Code Attribute:",ca)
