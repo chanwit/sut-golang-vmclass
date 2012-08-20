@@ -6,7 +6,7 @@ import "encoding/binary"
 func Interpret(ca code_attribute, cf *ClassFile) {
     s := new(Stack)
     s.Init(int(ca.max_stack))
-    locals := make([]int, ca.max_locals)
+    locals := make([]interface{}, ca.max_locals)
     code := ca.code
     pc := 0
 
@@ -44,8 +44,8 @@ func Interpret(ca code_attribute, cf *ClassFile) {
             case ICONST_5:
                 s.Push(5)
                 pc++
-            //case ASTORE_1:
-            //    locals[1] =
+            ////case ASTORE_1:
+            ////    locals[1] =
             case ISTORE:
                 locals[code[pc+1]] = s.Pop()
                 pc = pc + 2
@@ -78,30 +78,28 @@ func Interpret(ca code_attribute, cf *ClassFile) {
                 value := int(binary.BigEndian.Uint16(getb))
                 s.Push(value)
                 pc = pc + 3
+
             case IADD:
                 o1 := s.Pop()
                 o2 := s.Pop()
-                result := o2 + o1
-                s.Push(result)
+                s.Push(o2.(int) + o1.(int))
                 pc++
             case ISUB:
                 o1 := s.Pop()
                 o2 := s.Pop()
-                result := o2 - o1
-                s.Push(result)
+                s.Push(o2.(int) - o1.(int))
                 pc++
             case IMUL:
                 o1 := s.Pop()
                 o2 := s.Pop()
-                result := o2 * o1
-                s.Push(result)
+                s.Push(o2.(int) * o1.(int))
                 pc++
             case IDIV:
                 o1 := s.Pop()
                 o2 := s.Pop()
-                result := o2 / o1
-                s.Push(result)
+                s.Push(o2.(int) / o1.(int))
                 pc++
+
             case GETSTATIC:
                 getb := []byte{code[pc+1], code[pc+2]}
                 value := binary.BigEndian.Uint16(getb)
@@ -123,7 +121,7 @@ func Interpret(ca code_attribute, cf *ClassFile) {
                 method := string(cf.constant_pool[binary.BigEndian.Uint16(cf.constant_pool[nameAndType].info[:2])].info[2:])
                 signature := string(cf.constant_pool[binary.BigEndian.Uint16(cf.constant_pool[nameAndType].info[2:])].info[2:])
 
-                str := s.Pop()
+                str := s.Pop().(int)
                 varType := cf.constant_pool[str].tag
 
                 if method == "println" && signature == "(Ljava/lang/String;)V" && varType == CONSTANT_Utf8 {

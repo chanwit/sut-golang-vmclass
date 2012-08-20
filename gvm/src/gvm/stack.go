@@ -1,22 +1,22 @@
 package gvm
 
 type Stack struct {
-    data    []int
+    data    []interface{}
     tos     int
 }
 
 func (s *Stack) Init(size int) {
-    s.data = make([]int, size)
+    s.data = make([]interface{}, size)
     s.tos = -1
 }
 
-func (s *Stack) Push(num int) {
+func (s *Stack) Push(obj interface{}) {
     s.tos++
-    s.data[s.tos] = num
+    s.data[s.tos] = obj
 }
 
-func (s *Stack) Pop() (num int) {
-    num = s.data[s.tos]
+func (s *Stack) Pop() (obj interface{}) {
+    obj = s.data[s.tos]
     s.tos--
     return
 }
