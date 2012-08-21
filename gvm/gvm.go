@@ -5,9 +5,12 @@ import ( "fmt"
 		"os"
 		"io"	
 		"encoding/binary"
-		//"src/gvm"
-		//"bytes"
-)
+		"strconv"
+		//"strings"
+		. "bvm"
+		//"java_io"
+    	//"java_lang"
+)//
 
 type classfile struct{
 	magic 									uint32
@@ -1083,8 +1086,10 @@ func (s *stack) pop()(u interface{}) {
 }
 func execuse(ca code_attribute,cf *classfile) {
 	code:=ca.code
+	cp:=cf.constant_pool
 	s := &stack{}
 	s.init(int(ca.max_stack))
+	str := ""
 	locals := make([]interface{}, ca.max_locals)
 	pc:=0
 	for {
@@ -1166,22 +1171,42 @@ func execuse(ca code_attribute,cf *classfile) {
 			case ldc:
 				pc++
 					index := code[pc]
-			//	fmt.Println("index:",index)
 				d := cf.constant_pool[index]
 				nextindex := binary.BigEndian.Uint16(d.info[:])
-			//	fmt.Println(string(cf.constant_pool[nextindex].info[2:])) 
+				fmt.Println(nextindex)
 				s.push(int(nextindex))
 				pc++
 			case getstatic:
-				pc++
+		/*		cp:=cf.constant_pool
+				value := uint16(code[pc:pc+2])
+                if cp[value].tag != CONSTANT_Fieldref {
+                    panic("CONSTANT_Fieldref")
+                }
+
+                fmt.Println("CONSTANT_Fieldref : ")
+                fmt.Println("fieldref=", cp[value].info)
+                ownerIndex := uint16(cp[value].info[:2])
+                nameAndTypeIndex := uint16(cp[value].info[2:])
+                ownerClassIndex  := uint16(cp[ownerIndex].info[:2])
+                nameIndex := uint16(cp[nameAndTypeIndex].info[:2])
+                typeIndex := uint16(cp[nameAndTypeIndex].info[2:])
+
+                ownerName := string(cp[ownerClassIndex].info[2:])
+                fieldName := string(cp[nameIndex].info[2:])
+                fieldTypeName := string(cp[typeIndex].info[2:])
+
+                obj := CT(ownerName).StaticFields[fieldName]
+                s.Push(obj)
+                fmt.Println(fieldTypeName)
+		*/
+           //  --------Original------------
+               	pc++
 				value:=make([]byte,4)
-					value[1]=code[pc]
-						pc++
-					value[0]=code[pc]
-			//	var all uint32
-			//	all = binary.LittleEndian.Uint32(value[:4])
-   			//	s.push(all)
-   				pc++
+				value[1]=code[pc]
+				pc++
+				value[0]=code[pc]
+   				 pc++
+   			
 			case invokevirtual :
 				pc++
 				value:=make([]byte,4)
@@ -1190,46 +1215,103 @@ func execuse(ca code_attribute,cf *classfile) {
 					value[0]=code[pc]
 				var all uint32
 				ccon := cf.constant_pool
-				all = binary.LittleEndian.Uint32(value[:4])	//4
-					firststep := ccon[all]	//27,28
-					numfirst := binary.BigEndian.Uint16(firststep.info[:2])	//27
-					numsec := binary.BigEndian.Uint16(firststep.info[2:4]) 	//28
-						innumfirst := ccon[numfirst].info[:] 		//36
-						innumsec :=	ccon[numsec].info[:2] 			//37
-						innumsec1:= ccon[numsec].info[2:4]			//38
-							innerfirst := binary.BigEndian.Uint16(innumfirst)
-							innersec := binary.BigEndian.Uint16(innumsec)
-							innersec1 := binary.BigEndian.Uint16(innumsec1)
+				all = binary.LittleEndian.Uint32(value[:4])	//4 
+					methodRefIndex := ccon[all]	//27,28 //methodRefIndex
+					ownerIndex := binary.BigEndian.Uint16(methodRefIndex.info[:2])	//27 ownerIndex
+					nameAndTypeIndex := binary.BigEndian.Uint16(methodRefIndex.info[2:4]) 	//28 namAndTypeIndex
+						
+						ownerClassIndex := ccon[ownerIndex].info[:] 		//36
+						
+						nameIndex :=	ccon[nameAndTypeIndex].info[:2] 			//37
+						typeIndex := ccon[nameAndTypeIndex].info[2:4]			//38
+							ownerCLassIndexUint := binary.BigEndian.Uint16(ownerClassIndex)
+							nameIndexUint := binary.BigEndian.Uint16(nameIndex)
+							typeIndexUint := binary.BigEndian.Uint16(typeIndex)
 
-				printstream := string(ccon[innerfirst].info[2:])
-				printline := string(ccon[innersec].info[2:])
-				datatype := string(ccon[innersec1].info[2:])
-				if (printstream=="java/io/PrintStream")&&(printline=="println")&&(datatype=="(Ljava/lang/String;)V"){
-					retrived:=s.pop().(int)
-					fmt.Println(string(ccon[retrived].info[2:]))
+				owner := string(ccon[ownerCLassIndexUint].info[2:])
+				signature := string(ccon[nameIndexUint].info[2:])
+				desc := string(ccon[typeIndexUint].info[2:])
+				if (owner=="java/io/PrintStream")&&(signature=="println")&&(desc=="(Ljava/lang/String;)V"){
+					//retrived:=s.pop().(int)
+					//fmt.Println(string(ccon[retrived].info[2:]))
+					retrived:=s.pop().(string)
+					fmt.Println(retrived)
 				}
-				if (printstream=="java/io/PrintStream")&&(printline=="println")&&(datatype=="(I)V"){
+				if (owner=="java/io/PrintStream")&&(signature=="println")&&(desc=="(I)V"){
 					retrived:=s.pop().(int)
 					fmt.Println(retrived)
+
+				}
+				if ((owner=="java/lang/StringBuilder")&&(signature=="append")&&(desc=="(I)Ljava/lang/StringBuilder;")){
+					fmt.Println("===Integer===")
+					obj := s.pop().(int)
+					newString := strconv.Itoa(obj)
+					s.push(newString)
+					fmt.Println(obj,desc,newString)
+				}
+				if ((owner=="java/lang/StringBuilder")&&(signature=="append")&&(desc=="(Ljava/lang/String;)Ljava/lang/StringBuilder;")){
+					fmt.Println("====String====")
+					obj := s.pop().(int)
+					newString := string(cp[obj].info[2:])
+					s.push(newString)
+					fmt.Println(obj,desc,newString)
+				}
+				if ((owner=="java/lang/StringBuilder")&&(signature=="toString")&&(desc=="()Ljava/lang/String;")){
+					fmt.Println("====toString====")
+					obj := s.pop().(string)
+					obj2 := s.pop().(string)
+					str=str+obj2+obj
+					s.push(str)
 				}
    				pc++
    			case New:
-   				pc++
+   				cp := cf.constant_pool
    				value:=make([]byte,4)
-					value[1]=code[pc]
-					value[0]=code[pc+1]
+					value[1]=code[pc+1]
+					
+					value[0]=code[pc+2]
 				var all uint32
 				//ccon := cf.constant_pool
 				all = binary.LittleEndian.Uint32(value[:4])
-   				fmt.Println("New: ",all)
-   				pc++
+				ownerIndex := binary.BigEndian.Uint16(cp[all].info[:])
+				owner := string(cp[ownerIndex].info[2:])
+   				fmt.Println("New:111 ",owner)
+
+   				obj := &Object{ClassName:"java/lang/StringBuilder",
+                                       Native: string(cp[ownerIndex].info[:])}
+               	//fmt.Println(obj)
+               	s.push(obj)
+                pc=pc+3
    				fmt.Println(pc)
    			case invokespecial:
-   				pc++
-   				pc++
-   				pc++
+   				fmt.Println("special:",pc)
+  				cp := cf.constant_pool
+   				value:=make([]byte,4)
+					value[1]=code[pc+1]
+					value[0]=code[pc+2]
+				var methodRefIndex uint32
+				methodRefIndex = binary.LittleEndian.Uint32(value[:4])
+				fmt.Println(methodRefIndex) //4
+				classIndex := binary.BigEndian.Uint16(cp[methodRefIndex].info[:2])
+				nameAndTypeIndex := binary.BigEndian.Uint16(cp[methodRefIndex].info[2:])
+				
+				ownerIndex:=binary.BigEndian.Uint16(cp[classIndex].info[:])
+					owner := string(cp[ownerIndex].info[2:])
+
+				nameIndex:=binary.BigEndian.Uint16(cp[nameAndTypeIndex].info[:2])
+				typeIndex:=binary.BigEndian.Uint16(cp[nameAndTypeIndex].info[2:])
+
+					name := string(cp[nameIndex].info[2:])
+					types := string(cp[typeIndex].info[2:])
+				fmt.Println(classIndex,owner,nameAndTypeIndex,nameIndex,name,typeIndex, types)
+				if ((owner=="java/lang/StringBuilder")&&(name=="<init>")&&(types=="()V")){
+					recieve:=s.pop().(*Object)
+					fmt.Println(recieve)
+				}
+   				
+   				pc=pc+3
    			case dup:
-   				fmt.Println(pc)
+   				fmt.Println("dup",pc)
    				top := s.pop()
    				s.push(top)
    				s.push(top)
