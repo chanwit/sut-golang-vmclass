@@ -2,20 +2,24 @@ package main
 
 import "fmt"
 import "os"
+import "strings"
+import "java_lang"
+import "java_io"
 import . "gvm"
 
 func readSize(f *os.File) {
     state, _ := f.Stat()
-    fmt.Printf("size %d bytes\n", state.Size())
+    fmt.Println("size", state.Size(), "bytes")
 }
 
-func readFile(fileClass string, cf *ClassFile) {
-    f, err := os.Open(fileClass)
+func readFile(fileName string, cf *ClassFile) {
+    f, err := os.Open(fileName)
     if err != nil {
-        fmt.Printf("%v\n", err)
+        fmt.Println("This file cannot open.")
         os.Exit(1)
     }
     defer f.Close()
+    fmt.Print("Classfile ", fileName, "; ")
     readSize(f)
 
     d := NewDecoder(f, cf)
@@ -30,13 +34,14 @@ func readFile(fileClass string, cf *ClassFile) {
     //d.ReadAttribute()
 }
 
-func getFile(fileClass string, cf *ClassFile) {
-    f, err := os.Open(fileClass)
+func getFile(fileName string, cf *ClassFile) {
+    f, err := os.Open(fileName)
     if err != nil {
-        fmt.Printf("%v\n", err)
+        fmt.Println("This file cannot open.")
         os.Exit(1)
     }
     defer f.Close()
+    fmt.Print("Classfile ", fileName, "; ")
     readSize(f)
 
     d := NewDecoder(f, cf)
@@ -53,26 +58,35 @@ func getFile(fileClass string, cf *ClassFile) {
 
 func main() {
 
-    cf := new(ClassFile)
+	if len(os.Args) == 3 {
+		cf        := new(ClassFile)
+		option    := os.Args[1]
+		fileName  := os.Args[2]
 
-    if len(os.Args) == 1 {
-        fmt.Println("please input fileName !!!")
-    } else {
+		if !strings.HasSuffix(fileName, ".class") {
+			fileName = fileName + ".class"
+		}
 
-        opt := os.Args[1]
-        fileClass := os.Args[2] + ".class"
-        fmt.Printf("  ClassFile: \"%s\"; ", fileClass)
+		if option == "-c" {
+			getFile(fileName, cf)
+		}else if option == "-verbose" {
+			readFile(fileName, cf)
+		}else{
+			fmt.Println("-option")
+			fmt.Println("    -c")
+			fmt.Println("    -verbose")
+			os.Exit(0)
+		}
 
-        if opt == "-verbose" {
-            readFile(fileClass, cf)
-        }else if opt == "-c" {
-            getFile(fileClass, cf)
-        }else{
-            os.Exit(0)
-        }
+        java_lang.Init(ClassTable)
+        java_io.Init(ClassTable)
 
-        ca := FindMethod("main", cf)
-        Interpret(ca, cf)
-    }
+		ca := FindMethod("main", cf)
+		Interpret(ca, cf)
+
+	}else{
+		fmt.Println("./gvm.go -option -fileName")
+		os.Exit(0)
+	}
 
 }
