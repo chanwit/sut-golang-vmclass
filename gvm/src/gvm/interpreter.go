@@ -194,15 +194,14 @@ func Interpret(ca code_attribute, cf *ClassFile) {
                 fmt.Println(owner)
 
                 desc := string(cf.constant_pool[typeIndex].info[2:])
-                signatures := string(cf.constant_pool[nameIndex].info[2:]) + desc
+                signature := string(cf.constant_pool[nameIndex].info[2:]) + desc
 
-                fmt.Println(signatures)
+                fmt.Println(signature)
 
                 obj := s.Pop().(*Object)
 
-                if signatures == "<init>()V" {
-                    obj.Native = ""
-                }
+                field := CT(owner).StaticFields[signature]
+                obj.Native = field.Native.(string)
 
                 pc = pc + 3
 

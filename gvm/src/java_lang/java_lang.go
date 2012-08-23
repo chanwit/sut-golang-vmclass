@@ -11,7 +11,7 @@ func Init(ct map[string]*Class) {
     java_lang_System.StaticFields["out"] = &Object{ClassName: "java/io/PrintStream", Native: os.Stdout}
 
     java_lang_StringBuilder := NewClass()
-    java_lang_StringBuilder.StaticFields["<init>"] = &Object{ClassName: "java/lang/StringBuilder", Native: ""}
+    java_lang_StringBuilder.StaticFields["<init>()V"] = &Object{ClassName: "java/lang/StringBuilder", Native: ""}
     java_lang_StringBuilder.Methods["append(Ljava/lang/String;)Ljava/lang/StringBuilder;"] = &append__Ljava_lang_String__Ljava_lang_StringBuilder{native: true}
     java_lang_StringBuilder.Methods["append(I)Ljava/lang/StringBuilder;"] = &append__I__Ljava_lang_StringBuilder{native: true}
     java_lang_StringBuilder.Methods["toString()Ljava/lang/String;"] = &toString__V__Ljava_lang_String{native: true}
