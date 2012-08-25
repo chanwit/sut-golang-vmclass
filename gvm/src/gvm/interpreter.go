@@ -1,10 +1,11 @@
 package gvm
+//import "fmt"
 
 func Interpret(ca code_attribute, cp []cp_info) {
-    // s := new(Stack)
-    // s.Init(int(ca.max_stack))
-    // locals := make([]interface{}, ca.max_locals)
-    s := NewFrame(ca.max_stack, ca.max_locals)
+     s := new(Stack)
+     s.Init(ca.max_stack)
+     locals := make([]interface{}, ca.max_locals)
+    //s := NewFrame(ca.max_stack, ca.max_locals)
     code := ca.code
 
     pc := 0
@@ -31,7 +32,6 @@ func Interpret(ca code_attribute, cp []cp_info) {
                     // case CONSTANT_String:
                 }
                 pc++
-
             case ICONST_M1:
                 s.Push(-1)
             case ICONST_0:
@@ -48,28 +48,29 @@ func Interpret(ca code_attribute, cp []cp_info) {
                 s.Push(5)
 
             case ISTORE:
-                s.Store(int(code[pc]))
+                index:=code[pc]
+                locals[int(index)] = s.Pop()
                 pc++
             case ISTORE_0:
-                s.Store(0)
+                locals[0] = s.Pop()//s.Store(0)
             case ISTORE_1:
-                s.Store(1)
+                locals[1] = s.Pop()//s.Store(1)
             case ISTORE_2:
-                s.Store(2)
+                locals[2] = s.Pop()//s.Store(2)
             case ISTORE_3:
-                s.Store(3)
+                locals[3] = s.Pop()//s.Store(3)
 
             case ILOAD:
-                s.Load(int(code[pc]))
+                s.Push(int(code[pc]))
                 pc++
             case ILOAD_0:
-                s.Load(0)
+                s.Push(locals[0])
             case ILOAD_1:
-                s.Load(1)
+                s.Push(locals[1])
             case ILOAD_2:
-                s.Load(2)
+                s.Push(locals[2])
             case ILOAD_3:
-                s.Load(3)
+                s.Push(locals[3])
 
             case BIPUSH:
                 s.Push(int(code[pc]))
@@ -99,60 +100,97 @@ func Interpret(ca code_attribute, cp []cp_info) {
                 if cp[value].tag != CONSTANT_Fieldref {
                     panic("CONSTANT_Fieldref")
                 }
-
-                _debug("CONSTANT_Fieldref : ")
-                _debug("fieldref=", cp[value].info)
+                //fmt.Println("CONSTANT_Fieldref : ")
+                //fmt.Println("fieldref=", cp[value].info)
                 ownerIndex := u16(cp[value].info[:2])
                 nameAndTypeIndex := u16(cp[value].info[2:])
                 ownerClassIndex  := u16(cp[ownerIndex].info[:2])
                 nameIndex := u16(cp[nameAndTypeIndex].info[:2])
-                typeIndex := u16(cp[nameAndTypeIndex].info[2:])
+                //typeIndex := u16(cp[nameAndTypeIndex].info[2:])
 
                 ownerName := string(cp[ownerClassIndex].info[2:])
                 fieldName := string(cp[nameIndex].info[2:])
-                fieldTypeName := string(cp[typeIndex].info[2:])
-
+                //fieldTypeName := string(cp[typeIndex].info[2:])
                 obj := CT(ownerName).StaticFields[fieldName]
                 s.Push(obj)
-                _debug(fieldTypeName)
+
+                //fmt.Println(fieldTypeName)
 
                 pc = pc + 2
-
             case INVOKEVIRTUAL:
-                _debug("INVOKEVIRTUAL")
+                //fmt.Println("INVOKEVIRTUAL")
                 methodRefIndex := u16(code[pc:pc+2])
                 ownerIndex := u16(cp[methodRefIndex].info[:2])
                 nameAndTypeIndex := u16(cp[methodRefIndex].info[2:])
 
                 ownerClassIndex := u16(cp[ownerIndex].info)
 
-                _debug(cp[nameAndTypeIndex].info)
+                //fmt.Println(cp[nameAndTypeIndex].info)
 
                 nameIndex := u16(cp[nameAndTypeIndex].info[:2])
                 typeIndex := u16(cp[nameAndTypeIndex].info[2:])
                 owner := string(cp[ownerClassIndex].info[2:])
 
-                _debug(owner)
+                //fmt.Println(owner)
 
                 desc := string(cp[typeIndex].info[2:])
                 signature := string(cp[nameIndex].info[2:]) + desc
 
-                _debug(signature)
-
+                //fmt.Println(signature)
                 method := CT(owner).Methods[signature]
                 argCount := method.GetArgCount()
                 args := make([]*Object, argCount)
                 for i := 0; i < argCount; i++ {
-                    args[i] = s.Pop().(*Object)
-                }
+                    a := s.Pop()
+                    switch a.(type) {
+                        case int:
+                            args[i] = &Object{Native:a.(int)} 
+                        case *Object:
+                           args[i] = &Object{Native:(a.(*Object)).Native}
+                    }
+                }                    
                 recv := s.Pop().(*Object)
                 if void, ret := method.Invoke(recv, args); !void {
-                    s.Push(ret)
+                    s.Push(ret)                    
                 }
                 pc = pc + 2
+            case INVOKESPECIAL:
+                methodRefIndex := u16(code[pc:pc+2])
+                //ownerIndex := u16(cp[methodRefIndex].info[:2])
+                nameAndTypeIndex := u16(cp[methodRefIndex].info[2:])
 
+                //ownerClassIndex := u16(cp[ownerIndex].info)
+
+                //fmt.Println(cp[nameAndTypeIndex].info)
+
+                nameIndex := u16(cp[nameAndTypeIndex].info[:2])
+                typeIndex := u16(cp[nameAndTypeIndex].info[2:])
+                //owner := string(cp[ownerClassIndex].info[2:])
+
+                //fmt.Println(owner)
+
+                desc := string(cp[typeIndex].info[2:])
+                signature := string(cp[nameIndex].info[2:]) + desc
+                //fmt.Println(signature)
+                reciver := s.Pop().(*Object)
+                method := CT(reciver.ClassName).StaticFields[signature]
+                reciver.Native = method.Native
+                pc = pc + 2
+            case NEW:
+                value :=make([]byte,4)
+                    value[0] = code[pc]
+                    value[1] = code[pc+1]
+                index := u16(value)
+                classindex := u16(cp[index].info[:])
+                obj:=&Object{ClassName:string(cp[classindex].info[2:])}
+                s.Push(obj)
+                pc = pc + 2
+            case DUP:
+                top := s.Pop()
+                s.Push(top)
+                s.Push(top)
             case RETURN:
-                _debug(s.locals)
+                //fmt.Println(s.locals)
                 return
         }
     }

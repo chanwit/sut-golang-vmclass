@@ -1,0 +1,92 @@
+Classfile /C:/work/Chanwit/Chanwit/classes/helloint.class
+  Last modified 21 Ê.¤. 2555; size 573 bytes
+  MD5 checksum 1f17ed843c60d1babb2a57f49e6a7c63
+  Compiled from "helloint.java"
+public class helloint implements java.io.Serializable,java.lang.Comparable
+  SourceFile: "helloint.java"
+  minor version: 0
+  major version: 51
+  flags: ACC_PUBLIC, ACC_SUPER
+Constant pool:
+   #1 = Methodref          #5.#22         //  java/lang/Object."<init>":()V
+   #2 = Fieldref           #23.#24        //  java/lang/System.out:Ljava/io/PrintStream;
+   #3 = Methodref          #25.#26        //  java/io/PrintStream.println:(I)V
+   #4 = Class              #27            //  helloint
+   #5 = Class              #28            //  java/lang/Object
+   #6 = Class              #29            //  java/io/Serializable
+   #7 = Class              #30            //  java/lang/Comparable
+   #8 = Utf8               a
+   #9 = Utf8               I
+  #10 = Utf8               b
+  #11 = Utf8               B
+  #12 = Utf8               <init>
+  #13 = Utf8               ()V
+  #14 = Utf8               Code
+  #15 = Utf8               LineNumberTable
+  #16 = Utf8               main
+  #17 = Utf8               ([Ljava/lang/String;)V
+  #18 = Utf8               compareTo
+  #19 = Utf8               (Ljava/lang/Object;)I
+  #20 = Utf8               SourceFile
+  #21 = Utf8               helloint.java
+  #22 = NameAndType        #12:#13        //  "<init>":()V
+  #23 = Class              #31            //  java/lang/System
+  #24 = NameAndType        #32:#33        //  out:Ljava/io/PrintStream;
+  #25 = Class              #34            //  java/io/PrintStream
+  #26 = NameAndType        #35:#36        //  println:(I)V
+  #27 = Utf8               helloint
+  #28 = Utf8               java/lang/Object
+  #29 = Utf8               java/io/Serializable
+  #30 = Utf8               java/lang/Comparable
+  #31 = Utf8               java/lang/System
+  #32 = Utf8               out
+  #33 = Utf8               Ljava/io/PrintStream;
+  #34 = Utf8               java/io/PrintStream
+  #35 = Utf8               println
+  #36 = Utf8               (I)V
+{
+  public byte b;
+    flags: ACC_PUBLIC
+
+  public helloint();
+    flags: ACC_PUBLIC
+    Code:
+      stack=1, locals=1, args_size=1
+         0: aload_0       
+         1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+         4: return        
+      LineNumberTable:
+        line 1: 0
+
+  public static void main(java.lang.String[]);
+    flags: ACC_PUBLIC, ACC_STATIC
+    Code:
+      stack=2, locals=4, args_size=1
+         0: sipush        2015
+         3: istore_1      
+         4: iconst_3      
+         5: istore_2      
+         6: iload_1       
+         7: iload_2       
+         8: isub          
+         9: istore_3      
+        10: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;
+        13: bipush        10
+        15: invokevirtual #3                  // Method java/io/PrintStream.println:(I)V
+        18: return        
+      LineNumberTable:
+        line 5: 0
+        line 6: 4
+        line 7: 6
+        line 10: 10
+        line 11: 18
+
+  public int compareTo(java.lang.Object);
+    flags: ACC_PUBLIC
+    Code:
+      stack=1, locals=3, args_size=2
+         0: iconst_0      
+         1: ireturn       
+      LineNumberTable:
+        line 14: 0
+}

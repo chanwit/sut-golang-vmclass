@@ -2,33 +2,33 @@ package gvm
 
 import "os"
 import "encoding/binary"
-import "fmt"
+//import "fmt"
 
-type ClassReader struct {
+type Decoder struct {
     file *os.File
     bo   binary.ByteOrder
     cf   *ClassFile
 }
-
-func NewClassReader(f *os.File, cf *ClassFile) *ClassReader {
-    return &ClassReader{f, binary.BigEndian, cf}
+//To create Decoder struct
+func ClassDecoder(f *os.File, cf *ClassFile) *Decoder {
+    return &Decoder{f, binary.BigEndian, cf}
 }
 
-func (d *ClassReader) ReadMagic() {
+func (d *Decoder) ReadMagic() {
     binary.Read(d.file, d.bo, &(d.cf.magic))
-    _debugf("  magic : %x\n", d.cf.magic)
+    //fmt.Printf("  magic : %x\n", d.cf.magic)
 }
 
-func (d *ClassReader) ReadVersion() {
+func (d *Decoder) ReadVersion() {
     binary.Read(d.file, d.bo, &(d.cf.minor_version))
     binary.Read(d.file, d.bo, &(d.cf.major_version))
-    _debugf("  minor version: %d\n", d.cf.minor_version)
-    _debugf("  major version: %d\n", d.cf.major_version)
+    //fmt.Printf("  minor version: %d\n", d.cf.minor_version)
+    //fmt.Printf("  major version: %d\n", d.cf.major_version)
 }
 
-func (d *ClassReader) ReadConstantPool() {
+func (d *Decoder) ReadConstantPool() {
     binary.Read(d.file, d.bo, &(d.cf.constant_pool_count))
-    _debugf("Constant pool(%d):\n", d.cf.constant_pool_count)
+    //fmt.Printf("Constant pool(%d):\n", d.cf.constant_pool_count)
     d.cf.constant_pool = make([]cp_info, d.cf.constant_pool_count)
     for i := uint16(1); i < d.cf.constant_pool_count; i++ {
         var tag uint8
@@ -81,7 +81,7 @@ func (d *ClassReader) ReadConstantPool() {
             binary.BigEndian.PutUint16(info[0:2], length)
             binary.Read(d.file, d.bo, info[2:])
             d.cf.constant_pool[i] = cp_info{tag: tag, info: info}
-            _debugf("  #%d = %s\n", i, info[2:])
+            //fmt.Printf("  #%d = %s\n", i, info[2:])
         case CONSTANT_MethodHandle:
             info := make([]byte, 3)
             binary.Read(d.file, d.bo, info)
@@ -98,74 +98,74 @@ func (d *ClassReader) ReadConstantPool() {
     }
 }
 
-func (d *ClassReader) ReadFlag() {
+func (d *Decoder) ReadFlag() {
     binary.Read(d.file, d.bo, &(d.cf.access_flags))
-    _debug("  flags:")
+    //fmt.Println("  flags:")
     accessFlags := d.cf.access_flags
     if accessFlags & ACC_PUBLIC == ACC_PUBLIC {
-        _debug(" ACC_PUBLIC,")
+        //fmt.Println(" ACC_PUBLIC,")
     }
     if accessFlags & ACC_PRIVATE == ACC_PRIVATE {
-        _debug(" ACC_PRIVATE,")
+        //fmt.Println(" ACC_PRIVATE,")
     }
     if accessFlags & ACC_PROTECTED == ACC_PROTECTED {
-        _debug(" ACC_PROTECTED,")
+        //fmt.Println(" ACC_PROTECTED,")
     }
     if accessFlags & ACC_STATIC == ACC_STATIC {
-        _debug(" ACC_STATIC,")
+        //fmt.Println(" ACC_STATIC,")
     }
     if accessFlags & ACC_FINAL == ACC_FINAL {
-        _debug(" ACC_FINAL,")
+        //fmt.Println(" ACC_FINAL,")
     }
     if accessFlags & ACC_SUPER == ACC_SUPER {
-        _debug(" ACC_SUPER,")
+        //fmt.Println(" ACC_SUPER,")
     }
     if accessFlags & ACC_VOLATILE == ACC_VOLATILE {
-        _debug(" ACC_VOLATILE,")
+        //fmt.Println(" ACC_VOLATILE,")
     }
     if accessFlags & ACC_TRANSIENT == ACC_TRANSIENT {
-        _debug(" ACC_TRANSIENT,")
+        //fmt.Println(" ACC_TRANSIENT,")
     }
     if accessFlags & ACC_INTERFACE == ACC_INTERFACE {
-        _debug(" ACC_INTERFACE,")
+        //fmt.Println(" ACC_INTERFACE,")
     }
     if accessFlags & ACC_ABSTRACT == ACC_ABSTRACT {
-        _debug(" ACC_ABSTRACT,")
+        //fmt.Println(" ACC_ABSTRACT,")
     }
     if accessFlags & ACC_SYNTHETIC == ACC_SYNTHETIC {
-        _debug(" ACC_SYNTHETIC,")
+        //fmt.Println(" ACC_SYNTHETIC,")
     }
     if accessFlags & ACC_ENUM == ACC_ENUM {
-        _debug(" ACC_ENUM,")
+        //fmt.Println(" ACC_ENUM,")
     }
-    _debug("\b \n")
+    //fmt.Println("\b \n")
 }
 
-func (d *ClassReader) ReadClass() {
+func (d *Decoder) ReadClass() {
     binary.Read(d.file, d.bo, &(d.cf.this_class ))
     binary.Read(d.file, d.bo, &(d.cf.super_class))
-    _debug("Class:")
-    thisc  := d.cf.constant_pool[d.cf.this_class ]
-    superc := d.cf.constant_pool[d.cf.super_class]
-    _debug("  this class:", string(d.cf.constant_pool[(d.bo.Uint16(thisc.info))].info[2:]))
-    _debug("  super class:", string(d.cf.constant_pool[(d.bo.Uint16(superc.info))].info[2:]))
+    //fmt.Println("Class:")
+    //thisc  := d.cf.constant_pool[d.cf.this_class ]
+    //superc := d.cf.constant_pool[d.cf.super_class]
+    //fmt.Println("  this class:", string(d.cf.constant_pool[(d.bo.Uint16(thisc.info))].info[2:]))
+    //fmt.Println("  super class:", string(d.cf.constant_pool[(d.bo.Uint16(superc.info))].info[2:]))
 }
 
-func (d *ClassReader) ReadInterface() {
+func (d *Decoder) ReadInterface() {
     binary.Read(d.file, d.bo, &(d.cf.interfaces_count))
     interfaceCount := d.cf.interfaces_count
-    _debugf("Interface(%d):\n", interfaceCount)
+    //fmt.Printf("Interface(%d):\n", interfaceCount)
     d.cf.interfaces = make([]uint16, interfaceCount)
     for i := uint16(0); i < interfaceCount; i++ {
         binary.Read(d.file, d.bo, &(d.cf.interfaces[i]))
-        inter := d.cf.constant_pool[d.cf.interfaces[i]]
-        _debug(" ", string(d.cf.constant_pool[(d.bo.Uint16(inter.info))].info[2:]))
+        //inter := d.cf.constant_pool[d.cf.interfaces[i]]
+        //fmt.Println(" ", string(d.cf.constant_pool[(d.bo.Uint16(inter.info))].info[2:]))
     }
 }
 
-func (d *ClassReader) ReadField() {
+func (d *Decoder) ReadField() {
     binary.Read(d.file, d.bo, &(d.cf.fields_count))
-    _debugf("Field(%d):\n", d.cf.fields_count)
+    //fmt.Printf("Field(%d):\n", d.cf.fields_count)
     d.cf.fields = make([]field_info, d.cf.fields_count)
     for i := uint16(0); i < d.cf.fields_count; i++ {
         var fi field_info
@@ -174,8 +174,8 @@ func (d *ClassReader) ReadField() {
         binary.Read(d.file, d.bo, &fi.descriptor_index)
         binary.Read(d.file, d.bo, &fi.attributes_count)
         d.cf.fields[i] = field_info{access_flags: fi.access_flags, name_index: fi.name_index, descriptor_index: fi.descriptor_index, attributes_count: fi.attributes_count}
-        ni := d.cf.constant_pool[fi.name_index]
-        _debug(" ", string(ni.info[2:]))
+        //ni := d.cf.constant_pool[fi.name_index]
+        //fmt.Println(" ", string(ni.info[2:]))
 
         fi.attributes = make([]attribute_info, fi.attributes_count)
         for j := uint16(0); j < fi.attributes_count; j++ {
@@ -190,9 +190,9 @@ func (d *ClassReader) ReadField() {
     }
 }
 
-func (d *ClassReader) ReadMethod() {
+func (d *Decoder) ReadMethod() {
     binary.Read(d.file, d.bo, &(d.cf.method_count))
-    _debugf("Method(%d):\n", d.cf.method_count)
+    //fmt.Printf("Method(%d):\n", d.cf.method_count)
     d.cf.methods = make([]method_info, d.cf.method_count)
     for i := uint16(0); i < d.cf.method_count; i++ {
         var mi method_info
@@ -201,8 +201,8 @@ func (d *ClassReader) ReadMethod() {
         binary.Read(d.file, d.bo, &mi.descriptor_index)
         binary.Read(d.file, d.bo, &mi.attributes_count)
         d.cf.methods[i] = method_info{access_flags: mi.access_flags, name_index: mi.name_index, descriptor_index: mi.descriptor_index, attributes_count: mi.attributes_count}
-        ni := d.cf.constant_pool[mi.name_index]
-        _debug(" ", string(ni.info[2:]))
+        //ni := d.cf.constant_pool[mi.name_index]
+        //fmt.Println(" ", string(ni.info[2:]))
 
         d.cf.methods[i].attributes = make([]code_attribute, mi.attributes_count)
         for j := uint16(0); j < mi.attributes_count; j++ {
@@ -225,473 +225,473 @@ func (d *ClassReader) ReadMethod() {
                 d.cf.methods[i].attributes[j].code = make([]uint8, ca.code_length)
                 d.cf.methods[i].attributes[j].code = ca.code
                 for k := uint32(0); k < ca.code_length; k++ {
-                    _debugf("      %d: ", k)
+                    //fmt.Printf("      %d: ", k)
                     switch ca.code[k] {
                     case NOP:
-                        _debug("nop")
+                        //fmt.Println("nop")
                     case ACONST_NULL:
-                        _debug("aconst_null")
+                        //fmt.Println("aconst_null")
                     case ICONST_M1:
-                        _debug("iconst_m1")
+                        //fmt.Println("iconst_m1")
                     case ICONST_0:
-                        _debug("iconst_0")
+                        //fmt.Println("iconst_0")
                     case ICONST_1:
-                        _debug("iconst_1")
+                        //fmt.Println("iconst_1")
                     case ICONST_2:
-                        _debug("iconst_2")
+                        //fmt.Println("iconst_2")
                     case ICONST_3:
-                        _debug("iconst_3")
+                        //fmt.Println("iconst_3")
                     case ICONST_4:
-                        _debug("iconst_4")
+                        //fmt.Println("iconst_4")
                     case ICONST_5:
-                        _debug("iconst_5")
+                        //fmt.Println("iconst_5")
                     case LCONST_0:
-                        _debug("lconst_0")
+                        //fmt.Println("lconst_0")
                     case LCONST_1:
-                        _debug("lconst_1")
+                        //fmt.Println("lconst_1")
                     case FCONST_0:
-                        _debug("fconst_0")
+                        //fmt.Println("fconst_0")
                     case FCONST_1:
-                        _debug("fconst_1")
+                        //fmt.Println("fconst_1")
                     case FCONST_2:
-                        _debug("fconst_2")
+                        //fmt.Println("fconst_2")
                     case DCONST_0:
-                        _debug("dconst_0")
+                        //fmt.Println("dconst_0")
                     case DCONST_1:
-                        _debug("dconst_1")
+                        //fmt.Println("dconst_1")
                     case BIPUSH:
-                        _debug("bipush")
+                        //fmt.Println("bipush")
                         k = k + 1
                     case SIPUSH:
-                        _debug("sipush")
+                        //fmt.Println("sipush")
                         k = k + 2
                     case LDC:
-                        _debug("ldc")
+                        //fmt.Println("ldc")
                         k = k + 1
                     case LDC_W:
-                        _debug("ldc_w")
+                        //fmt.Println("ldc_w")
                         k = k + 2
                     case LDC2_W:
-                        _debug("ldc2_w")
+                        //fmt.Println("ldc2_w")
                         k = k + 2
                     case ILOAD:
-                        _debug("iload")
+                        //fmt.Println("iload")
                         k = k + 1
                     case LLOAD:
-                        _debug("lload")
+                        //fmt.Println("lload")
                         k = k + 1
                     case FLOAD:
-                        _debug("fload")
+                        //fmt.Println("fload")
                         k = k + 1
                     case DLOAD:
-                        _debug("dload")
+                        //fmt.Println("dload")
                         k = k + 1
                     case ALOAD:
-                        _debug("aload")
+                        //fmt.Println("aload")
                         k = k + 1
                     case ILOAD_0:
-                        _debug("iload_0")
+                        //fmt.Println("iload_0")
                     case ILOAD_1:
-                        _debug("iload_1")
+                        //fmt.Println("iload_1")
                     case ILOAD_2:
-                        _debug("iload_2")
+                        //fmt.Println("iload_2")
                     case ILOAD_3:
-                        _debug("iload_3")
+                        //fmt.Println("iload_3")
                     case LLOAD_0:
-                        _debug("lload_0")
+                        //fmt.Println("lload_0")
                     case LLOAD_1:
-                        _debug("lload_1")
+                        //fmt.Println("lload_1")
                     case LLOAD_2:
-                        _debug("lload_2")
+                        //fmt.Println("lload_2")
                     case LLOAD_3:
-                        _debug("lload_3")
+                        //fmt.Println("lload_3")
                     case FLOAD_0:
-                        _debug("fload_0")
+                        //fmt.Println("fload_0")
                     case FLOAD_1:
-                        _debug("fload_1")
+                        //fmt.Println("fload_1")
                     case FLOAD_2:
-                        _debug("fload_2")
+                        //fmt.Println("fload_2")
                     case FLOAD_3:
-                        _debug("fload_3")
+                        //fmt.Println("fload_3")
                     case DLOAD_0:
-                        _debug("dload_0")
+                        //fmt.Println("dload_0")
                     case DLOAD_1:
-                        _debug("dload_1")
+                        //fmt.Println("dload_1")
                     case DLOAD_2:
-                        _debug("dload_2")
+                        //fmt.Println("dload_2")
                     case DLOAD_3:
-                        _debug("dload_3")
+                        //fmt.Println("dload_3")
                     case ALOAD_0:
-                        _debug("aload_0")
+                        //fmt.Println("aload_0")
                     case ALOAD_1:
-                        _debug("aload_1")
+                        //fmt.Println("aload_1")
                     case ALOAD_2:
-                        _debug("aload_2")
+                        //fmt.Println("aload_2")
                     case ALOAD_3:
-                        _debug("aload_3")
+                        //fmt.Println("aload_3")
                     case IALOAD:
-                        _debug("iaload")
+                        //fmt.Println("iaload")
                     case LALOAD:
-                        _debug("laload")
+                        //fmt.Println("laload")
                     case FALOAD:
-                        _debug("faload")
+                        //fmt.Println("faload")
                     case DALOAD:
-                        _debug("daload")
+                        //fmt.Println("daload")
                     case AALOAD:
-                        _debug("aaload")
+                        //fmt.Println("aaload")
                     case BALOAD:
-                        _debug("baload")
+                        //fmt.Println("baload")
                     case CALOAD:
-                        _debug("caload")
+                        //fmt.Println("caload")
                     case SALOAD:
-                        _debug("saload")
+                        //fmt.Println("saload")
                     case ISTORE:
-                        _debug("istore")
+                        //fmt.Println("istore")
                         k = k + 1
                     case LSTORE:
-                        _debug("lstore")
+                        //fmt.Println("lstore")
                         k = k + 1
                     case FSTORE:
-                        _debug("fstore")
+                        //fmt.Println("fstore")
                         k = k + 1
                     case DSTORE:
-                        _debug("dstore")
+                        //fmt.Println("dstore")
                         k = k + 1
                     case ASTORE:
-                        _debug("astore")
+                        //fmt.Println("astore")
                         k = k + 1
                     case ISTORE_0:
-                        _debug("istore_0")
+                        //fmt.Println("istore_0")
                     case ISTORE_1:
-                        _debug("istore_1")
+                        //fmt.Println("istore_1")
                     case ISTORE_2:
-                        _debug("istore_2")
+                        //fmt.Println("istore_2")
                     case ISTORE_3:
-                        _debug("istore_3")
+                        //fmt.Println("istore_3")
                     case LSTORE_0:
-                        _debug("lstore_0")
+                        //fmt.Println("lstore_0")
                     case LSTORE_1:
-                        _debug("lstore_1")
+                        //fmt.Println("lstore_1")
                     case LSTORE_2:
-                        _debug("lstore_2")
+                        //fmt.Println("lstore_2")
                     case LSTORE_3:
-                        _debug("lstore_3")
+                        //fmt.Println("lstore_3")
                     case FSTORE_0:
-                        _debug("fstore_0")
+                        //fmt.Println("fstore_0")
                     case FSTORE_1:
-                        _debug("fstore_1")
+                        //fmt.Println("fstore_1")
                     case FSTORE_2:
-                        _debug("fstore_2")
+                        //fmt.Println("fstore_2")
                     case FSTORE_3:
-                        _debug("fstore_3")
+                        //fmt.Println("fstore_3")
                     case DSTORE_0:
-                        _debug("dstore_0")
+                        //fmt.Println("dstore_0")
                     case DSTORE_1:
-                        _debug("dstore_1")
+                        //fmt.Println("dstore_1")
                     case DSTORE_2:
-                        _debug("dstore_2")
+                        //fmt.Println("dstore_2")
                     case DSTORE_3:
-                        _debug("dstore_3")
+                        //fmt.Println("dstore_3")
                     case ASTORE_0:
-                        _debug("astore_0")
+                        //fmt.Println("astore_0")
                     case ASTORE_1:
-                        _debug("astore_1")
+                        //fmt.Println("astore_1")
                     case ASTORE_2:
-                        _debug("astore_2")
+                        //fmt.Println("astore_2")
                     case ASTORE_3:
-                        _debug("astore_3")
+                        //fmt.Println("astore_3")
                     case IASTORE:
-                        _debug("iastore")
+                        //fmt.Println("iastore")
                     case LASTORE:
-                        _debug("lastore")
+                        //fmt.Println("lastore")
                     case FASTORE:
-                        _debug("fastore")
+                        //fmt.Println("fastore")
                     case DASTORE:
-                        _debug("dastore")
+                        //fmt.Println("dastore")
                     case AASTORE:
-                        _debug("aastore")
+                        //fmt.Println("aastore")
                     case BASTORE:
-                        _debug("bastore")
+                        //fmt.Println("bastore")
                     case CASTORE:
-                        _debug("castore")
+                        //fmt.Println("castore")
                     case SASTORE:
-                        _debug("sastore")
+                        //fmt.Println("sastore")
                     case POP:
-                        _debug("pop")
+                        //fmt.Println("pop")
                     case POP2:
-                        _debug("pop2")
+                        //fmt.Println("pop2")
                     case DUP:
-                        _debug("dup")
+                        //fmt.Println("dup")
                     case DUP_X1:
-                        _debug("dup_x1")
+                        //fmt.Println("dup_x1")
                     case DUP_X2:
-                        _debug("dup_x2")
+                        //fmt.Println("dup_x2")
                     case DUP2:
-                        _debug("dup2")
+                        //fmt.Println("dup2")
                     case DUP2_X1:
-                        _debug("dup2_x1")
+                        //fmt.Println("dup2_x1")
                     case DUP2_X2:
-                        _debug("dup2_x2")
+                        //fmt.Println("dup2_x2")
                     case SWAP:
-                        _debug("swap")
+                        //fmt.Println("swap")
                     case IADD:
-                        _debug("iadd")
+                        //fmt.Println("iadd")
                     case LADD:
-                        _debug("ladd")
+                        //fmt.Println("ladd")
                     case FADD:
-                        _debug("fadd")
+                        //fmt.Println("fadd")
                     case DADD:
-                        _debug("dadd")
+                        //fmt.Println("dadd")
                     case ISUB:
-                        _debug("isub")
+                        //fmt.Println("isub")
                     case LSUB:
-                        _debug("lsub")
+                        //fmt.Println("lsub")
                     case FSUB:
-                        _debug("fsub")
+                        //fmt.Println("fsub")
                     case DSUB:
-                        _debug("dsub")
+                        //fmt.Println("dsub")
                     case IMUL:
-                        _debug("imul")
+                        //fmt.Println("imul")
                     case LMUL:
-                        _debug("lmul")
+                        //fmt.Println("lmul")
                     case FMUL:
-                        _debug("fmul")
+                        //fmt.Println("fmul")
                     case DMUL:
-                        _debug("dmul")
+                        //fmt.Println("dmul")
                     case IDIV:
-                        _debug("idiv")
+                        //fmt.Println("idiv")
                     case LDIV:
-                        _debug("ldiv")
+                        //fmt.Println("ldiv")
                     case FDIV:
-                        _debug("fdiv")
+                        //fmt.Println("fdiv")
                     case DDIV:
-                        _debug("ddiv")
+                        //fmt.Println("ddiv")
                     case IREM:
-                        _debug("irem")
+                        //fmt.Println("irem")
                     case LREM:
-                        _debug("lrem")
+                        //fmt.Println("lrem")
                     case FREM:
-                        _debug("frem")
+                        //fmt.Println("frem")
                     case DREM:
-                        _debug("drem")
+                        //fmt.Println("drem")
                     case INEG:
-                        _debug("ineg")
+                        //fmt.Println("ineg")
                     case LNEG:
-                        _debug("lneg")
+                        //fmt.Println("lneg")
                     case FNEG:
-                        _debug("fneg")
+                        //fmt.Println("fneg")
                     case DNEG:
-                        _debug("dneg")
+                        //fmt.Println("dneg")
                     case ISHL:
-                        _debug("ishl")
+                        //fmt.Println("ishl")
                     case LSHL:
-                        _debug("lshl")
+                        //fmt.Println("lshl")
                     case ISHR:
-                        _debug("ishr")
+                        //fmt.Println("ishr")
                     case LSHR:
-                        _debug("lshr")
+                        //fmt.Println("lshr")
                     case IUSHR:
-                        _debug("iushr")
+                        //fmt.Println("iushr")
                     case LUSHR:
-                        _debug("lushr")
+                        //fmt.Println("lushr")
                     case IAND:
-                        _debug("iand")
+                        //fmt.Println("iand")
                     case LAND:
-                        _debug("land")
+                        //fmt.Println("land")
                     case IOR:
-                        _debug("ior")
+                        //fmt.Println("ior")
                     case LOR:
-                        _debug("lor")
+                        //fmt.Println("lor")
                     case IXOR:
-                        _debug("ixor")
+                        //fmt.Println("ixor")
                     case LXOR:
-                        _debug("lxor")
+                        //fmt.Println("lxor")
                     case IINC:
-                        _debug("iinc")
+                        //fmt.Println("iinc")
                         k = k + 2
                     case I2L:
-                        _debug("i2l")
+                        //fmt.Println("i2l")
                     case I2F:
-                        _debug("i2f")
+                        //fmt.Println("i2f")
                     case I2D:
-                        _debug("i2d")
+                        //fmt.Println("i2d")
                     case L2I:
-                        _debug("l2i")
+                        //fmt.Println("l2i")
                     case L2F:
-                        _debug("l2f")
+                        //fmt.Println("l2f")
                     case L2D:
-                        _debug("l2d")
+                        //fmt.Println("l2d")
                     case F2I:
-                        _debug("f2i")
+                        //fmt.Println("f2i")
                     case F2L:
-                        _debug("f2l")
+                        //fmt.Println("f2l")
                     case F2D:
-                        _debug("f2d")
+                        //fmt.Println("f2d")
                     case D2I:
-                        _debug("d2i")
+                        //fmt.Println("d2i")
                     case D2L:
-                        _debug("d2l")
+                        //fmt.Println("d2l")
                     case D2F:
-                        _debug("d2f")
+                        //fmt.Println("d2f")
                     case I2B:
-                        _debug("i2b")
+                        //fmt.Println("i2b")
                     case I2C:
-                        _debug("i2c")
+                        //fmt.Println("i2c")
                     case I2S:
-                        _debug("i2s")
+                        //fmt.Println("i2s")
                     case LCMP:
-                        _debug("lcmp")
+                        //fmt.Println("lcmp")
                     case FCMPL:
-                        _debug("fcmpl")
+                        //fmt.Println("fcmpl")
                     case FCMPG:
-                        _debug("fcmpg")
+                        //fmt.Println("fcmpg")
                     case DCMPL:
-                        _debug("dcmpl")
+                        //fmt.Println("dcmpl")
                     case DCMPG:
-                        _debug("dcmpg")
+                        //fmt.Println("dcmpg")
                     case IFEQ:
-                        _debug("ifeq")
+                        //fmt.Println("ifeq")
                         k = k + 2
                     case IFNE:
-                        _debug("ifne")
+                        //fmt.Println("ifne")
                         k = k + 2
                     case IFLT:
-                        _debug("iflt")
+                        //fmt.Println("iflt")
                         k = k + 2
                     case IFGE:
-                        _debug("ifge")
+                        //fmt.Println("ifge")
                         k = k + 2
                     case IFGT:
-                        _debug("ifgt")
+                        //fmt.Println("ifgt")
                         k = k + 2
                     case IFLE:
-                        _debug("ifle")
+                        //fmt.Println("ifle")
                         k = k + 2
                     case IF_ICMPEQ:
-                        _debug("if_icmpeq")
+                        //fmt.Println("if_icmpeq")
                         k = k + 2
                     case IF_ICMPNE:
-                        _debug("if_icmpne")
+                        //fmt.Println("if_icmpne")
                         k = k + 2
                     case IF_ICMPLT:
-                        _debug("if_icmplt")
+                        //fmt.Println("if_icmplt")
                         k = k + 2
                     case IF_ICMPGE:
-                        _debug("if_icmpge")
+                        //fmt.Println("if_icmpge")
                         k = k + 2
                     case IF_ICMPGT:
-                        _debug("if_icmpgt")
+                        //fmt.Println("if_icmpgt")
                         k = k + 2
                     case IF_ICMPLE:
-                        _debug("if_icmple")
+                        //fmt.Println("if_icmple")
                         k = k + 2
                     case IF_ACMPEQ:
-                        _debug("if_acmpeq")
+                        //fmt.Println("if_acmpeq")
                         k = k + 2
                     case IF_ACMPNE:
-                        _debug("if_acmpne")
+                        //fmt.Println("if_acmpne")
                         k = k + 2
                     case GOTO:
-                        _debug("goto")
+                        //fmt.Println("goto")
                         k = k + 2
                     case JSR:
-                        _debug("jsr")
+                        //fmt.Println("jsr")
                         k = k + 2
                     case RET:
-                        _debug("ret")
+                        //fmt.Println("ret")
                         k = k + 1
                     case TABLESWITCH:
-                        _debug("tableswitch")
+                        //fmt.Println("tableswitch")
                         //k = k+???
                     case LOOKUPSWITCH:
-                        _debug("lookupswitch")
+                        //fmt.Println("lookupswitch")
                         //k = k+???
                     case IRETURN:
-                        _debug("ireturn")
+                        //fmt.Println("ireturn")
                     case LRETURN:
-                        _debug("lreturn")
+                        //fmt.Println("lreturn")
                     case FRETURN:
-                        _debug("freturn")
+                        //fmt.Println("freturn")
                     case DRETURN:
-                        _debug("dreturn")
+                        //fmt.Println("dreturn")
                     case ARETURN:
-                        _debug("areturn")
+                        //fmt.Println("areturn")
                     case RETURN:
-                        _debug("return")
+                        //fmt.Println("return")
                     case GETSTATIC:
-                        _debug("getstatic")
+                        //fmt.Println("getstatic")
                         k = k + 2
                     case PUTSTATIC:
-                        _debug("putstatic")
+                        //fmt.Println("putstatic")
                         k = k + 2
                     case GETFIELD:
-                        _debug("getfield")
+                        //fmt.Println("getfield")
                         k = k + 2
                     case PUTFIELD:
-                        _debug("putfield")
+                        //fmt.Println("putfield")
                         k = k + 2
                     case INVOKEVIRTUAL:
-                        _debug("invokevirtual")
+                        //fmt.Println("invokevirtual")
                         k = k + 2
                     case INVOKESPECIAL:
-                        _debug("invokespecial")
+                        //fmt.Println("invokespecial")
                         k = k + 2
                     case INVOKESTATIC:
-                        _debug("invokestatic")
+                        //fmt.Println("invokestatic")
                         k = k + 2
                     case INVOKEINTERFACE:
-                        _debug("invokeinterface")
+                        //fmt.Println("invokeinterface")
                         k = k + 4
                     case INVOKEDYNAMIC:
-                        _debug("invokedynamic")
+                        //fmt.Println("invokedynamic")
                         k = k + 4
                     case NEW:
-                        _debug("new")
+                        //fmt.Println("new")
                         k = k + 2
                     case NEWARRAY:
-                        _debug("newarray")
+                        //fmt.Println("newarray")
                         k = k + 1
                     case ANEWARRAY:
-                        _debug("anewarray")
+                        //fmt.Println("anewarray")
                         k = k + 2
                     case ARRAYLENGTH:
-                        _debug("arraylength")
+                        //fmt.Println("arraylength")
                     case ATHROW:
-                        _debug("athrow")
+                        //fmt.Println("athrow")
                     case CHECKCAST:
-                        _debug("checkcast")
+                        //fmt.Println("checkcast")
                         k = k + 2
                     case INSTANCEOF:
-                        _debug("instanceof")
+                        //fmt.Println("instanceof")
                         k = k + 2
                     case MONITORENTER:
-                        _debug("monitorenter")
+                        //fmt.Println("monitorenter")
                     case MONITOREXIT:
-                        _debug("monitorexit")
+                        //fmt.Println("monitorexit")
                     case WIDE:
-                        _debug("wide")
+                        //fmt.Println("wide")
                         //k = k+???
                     case MULTIANEWARRAY:
-                        _debug("multianewarray")
+                        //fmt.Println("multianewarray")
                         k = k + 3
                     case IFNULL:
-                        _debug("ifnull")
+                        //fmt.Println("ifnull")
                         k = k + 2
                     case IFNONNULL:
-                        _debug("ifnonnull")
+                        //fmt.Println("ifnonnull")
                         k = k + 2
                     case GOTO_W:
-                        _debug("goto_w")
+                        //fmt.Println("goto_w")
                         k = k + 4
                     case JSR_W:
-                        _debug("jsr_w")
+                        //fmt.Println("jsr_w")
                         k = k + 4
                     case BREAKPOINT:
-                        _debug("breakpoint")
+                        //fmt.Println("breakpoint")
                     case IMPDEP1:
-                        _debug("impdep1")
+                        //fmt.Println("impdep1")
                     case IMPDEP2:
-                        _debug("impdep2")
+                        //fmt.Println("impdep2")
                     }
                 }
                 ca.exception_table_length = d.bo.Uint16(info[8+ca.code_length : 10+ca.code_length])
@@ -706,7 +706,7 @@ func (d *ClassReader) ReadMethod() {
                     handler_pc = d.bo.Uint16(info[14+ca.code_length : 16+ca.code_length])
                     catch_type = d.bo.Uint16(info[16+ca.code_length : 18+ca.code_length])
                     d.cf.methods[i].attributes[j].exception[l] = exception_table{start_pc: start_pc, end_pc: end_pc, handler_pc: handler_pc, catch_type: catch_type}
-                    _debug(start_pc, end_pc, handler_pc, catch_type)
+                    //fmt.Println(start_pc, end_pc, handler_pc, catch_type)
                 }
                 index := uint16(ca.code_length) + ca.exception_table_length
                 ca.attributes_count = d.bo.Uint16(info[index+10 : index+12])
@@ -721,7 +721,7 @@ func (d *ClassReader) ReadMethod() {
                     lnt_a.attribute_length = length
                     lnt_a.line_number_table_length = d.bo.Uint16(info[index+18 : index+20])
                     lnt_a.line_number_tables = make([]line_number_table, lnt_a.line_number_table_length)
-                    _debug("   ", string(d.cf.constant_pool[name_index].info[2:]), ":")
+                    //fmt.Println("   ", string(d.cf.constant_pool[name_index].info[2:]), ":")
                     d.cf.methods[i].attributes[j].line_number_table_att[m].line_number_tables = make([]line_number_table, lnt_a.line_number_table_length)
                     for o := uint16(0); o < lnt_a.line_number_table_length; o++ {
                         var start_pc uint16
@@ -731,7 +731,7 @@ func (d *ClassReader) ReadMethod() {
 
                         d.cf.methods[i].attributes[j].line_number_table_att[m].line_number_tables[o] = line_number_table{start_pc: start_pc, line_number: line_number}
 
-                        _debug("    line", line_number, ":", start_pc)
+                        //fmt.Println("    line", line_number, ":", start_pc)
                     }
 
                     d.cf.methods[i].attributes[j].line_number_table_att[m] = LineNumberTable_attribute{attribute_name_index: lnt_a.attribute_name_index, attribute_length: lnt_a.attribute_length, line_number_table_length: lnt_a.line_number_table_length, line_number_tables: d.cf.methods[i].attributes[j].line_number_table_att[m].line_number_tables}
@@ -745,9 +745,9 @@ func (d *ClassReader) ReadMethod() {
     }
 }
 
-func (cr *ClassReader) ReadAttribute() {
+func (cr *Decoder) ReadAttribute() {
     binary.Read(cr.file, cr.bo, &(cr.cf.attributes_count))
-    _debugf("attribute count : %d\n", cr.cf.attributes_count)
+    //fmt.Printf("attribute count : %d\n", cr.cf.attributes_count)
     cr.cf.attributes = make([]attribute_info, cr.cf.attributes_count)
     for i := uint16(0); i < cr.cf.attributes_count; i++ {
         var name_index uint16
@@ -760,7 +760,7 @@ func (cr *ClassReader) ReadAttribute() {
                                             attribute_length: length,
                                             info: info}
 
-        att := cr.cf.constant_pool[name_index]
-        fmt.Println(att, string(att.info[2:]))
+        //att := cr.cf.constant_pool[name_index]
+        //fmt.Println(att, string(att.info[2:]))
     }
 }

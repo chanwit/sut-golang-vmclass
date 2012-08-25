@@ -1,0 +1,117 @@
+Classfile /C:/work/Chanwit/Chanwit/classes/hello.class
+  Last modified 21 Ê.¤. 2555; size 807 bytes
+  MD5 checksum 46c8ab411e4eec2fb463018cbebc4508
+  Compiled from "hello.java"
+public class hello implements java.io.Serializable,java.lang.Comparable
+  SourceFile: "hello.java"
+  minor version: 0
+  major version: 51
+  flags: ACC_PUBLIC, ACC_SUPER
+Constant pool:
+   #1 = Methodref          #11.#28        //  java/lang/Object."<init>":()V
+   #2 = Fieldref           #29.#30        //  java/lang/System.out:Ljava/io/PrintStream;
+   #3 = Class              #31            //  java/lang/StringBuilder
+   #4 = Methodref          #3.#28         //  java/lang/StringBuilder."<init>":()V
+   #5 = String             #32            //  Hello World 
+   #6 = Methodref          #3.#33         //  java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+   #7 = Methodref          #3.#34         //  java/lang/StringBuilder.append:(I)Ljava/lang/StringBuilder;
+   #8 = Methodref          #3.#35         //  java/lang/StringBuilder.toString:()Ljava/lang/String;
+   #9 = Methodref          #36.#37        //  java/io/PrintStream.println:(Ljava/lang/String;)V
+  #10 = Class              #38            //  hello
+  #11 = Class              #39            //  java/lang/Object
+  #12 = Class              #40            //  java/io/Serializable
+  #13 = Class              #41            //  java/lang/Comparable
+  #14 = Utf8               a
+  #15 = Utf8               I
+  #16 = Utf8               b
+  #17 = Utf8               B
+  #18 = Utf8               <init>
+  #19 = Utf8               ()V
+  #20 = Utf8               Code
+  #21 = Utf8               LineNumberTable
+  #22 = Utf8               main
+  #23 = Utf8               ([Ljava/lang/String;)V
+  #24 = Utf8               compareTo
+  #25 = Utf8               (Ljava/lang/Object;)I
+  #26 = Utf8               SourceFile
+  #27 = Utf8               hello.java
+  #28 = NameAndType        #18:#19        //  "<init>":()V
+  #29 = Class              #42            //  java/lang/System
+  #30 = NameAndType        #43:#44        //  out:Ljava/io/PrintStream;
+  #31 = Utf8               java/lang/StringBuilder
+  #32 = Utf8               Hello World 
+  #33 = NameAndType        #45:#46        //  append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+  #34 = NameAndType        #45:#47        //  append:(I)Ljava/lang/StringBuilder;
+  #35 = NameAndType        #48:#49        //  toString:()Ljava/lang/String;
+  #36 = Class              #50            //  java/io/PrintStream
+  #37 = NameAndType        #51:#52        //  println:(Ljava/lang/String;)V
+  #38 = Utf8               hello
+  #39 = Utf8               java/lang/Object
+  #40 = Utf8               java/io/Serializable
+  #41 = Utf8               java/lang/Comparable
+  #42 = Utf8               java/lang/System
+  #43 = Utf8               out
+  #44 = Utf8               Ljava/io/PrintStream;
+  #45 = Utf8               append
+  #46 = Utf8               (Ljava/lang/String;)Ljava/lang/StringBuilder;
+  #47 = Utf8               (I)Ljava/lang/StringBuilder;
+  #48 = Utf8               toString
+  #49 = Utf8               ()Ljava/lang/String;
+  #50 = Utf8               java/io/PrintStream
+  #51 = Utf8               println
+  #52 = Utf8               (Ljava/lang/String;)V
+{
+  public byte b;
+    flags: ACC_PUBLIC
+
+  public hello();
+    flags: ACC_PUBLIC
+    Code:
+      stack=1, locals=1, args_size=1
+         0: aload_0       
+         1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+         4: return        
+      LineNumberTable:
+        line 1: 0
+
+  public static void main(java.lang.String[]);
+    flags: ACC_PUBLIC, ACC_STATIC
+    Code:
+      stack=4, locals=4, args_size=1
+         0: sipush        2015
+         3: istore_1      
+         4: iconst_3      
+         5: istore_2      
+         6: iload_1       
+         7: iload_2       
+         8: isub          
+         9: istore_3      
+        10: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;
+        13: new           #3                  // class java/lang/StringBuilder
+        16: dup           
+        17: invokespecial #4                  // Method java/lang/StringBuilder."<init>":()V
+        20: ldc           #5                  // String Hello World 
+        22: invokevirtual #6                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+        25: iload_1       
+        26: iload_2       
+        27: isub          
+        28: invokevirtual #7                  // Method java/lang/StringBuilder.append:(I)Ljava/lang/StringBuilder;
+        31: invokevirtual #8                  // Method java/lang/StringBuilder.toString:()Ljava/lang/String;
+        34: invokevirtual #9                  // Method java/io/PrintStream.println:(Ljava/lang/String;)V
+        37: return        
+      LineNumberTable:
+        line 5: 0
+        line 6: 4
+        line 7: 6
+        line 9: 10
+        line 11: 37
+
+  public int compareTo(java.lang.Object);
+    flags: ACC_PUBLIC
+    Code:
+      stack=1, locals=3, args_size=2
+         0: iconst_0      
+         1: ireturn       
+      LineNumberTable:
+        line 14: 0
+}
