@@ -198,10 +198,22 @@ func Interpret(ca code_attribute, cf *ClassFile) {
 
                 fmt.Println(signature)
 
-                obj := s.Pop().(*Object)
-
-                field := CT(owner).StaticFields[signature]
-                obj.Native = field.Native.(string)
+                method := CT(owner).Methods[signature]
+                argCount := method.GetArgCount()
+                args := make([]*Object, argCount)
+                for i := 0; i < argCount; i++ {
+                    a := s.Pop()
+                    switch a.(type) {
+                        case int:
+                            args[i] = &Object{Native: a.(int)}
+                        case *Object:
+                            args[i] = a.(*Object)
+                    }
+                }
+                recv := s.Pop().(*Object)
+                if void, ret := method.Invoke(recv, args); !void {
+                    s.Push(ret)
+                }
 
                 pc = pc + 3
 
