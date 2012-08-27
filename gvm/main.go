@@ -58,7 +58,7 @@ func getFile(fileName string, cf *ClassFile) {
 
 func main() {
 
-	if len(os.Args) == 3 {
+    if len(os.Args) == 3 {
 		cf        := new(ClassFile)
 		option    := os.Args[1]
 		fileName  := os.Args[2]
@@ -81,8 +81,8 @@ func main() {
         java_lang.Init(ClassTable)
         java_io.Init(ClassTable)
 
-		ca := FindMethod("main", cf)
-		Interpret(ca, cf)
+        ca := FindMethod("main([Ljava/lang/String;)V", cf)
+        Interpret(ca, cf)
 
 	}else{
 		fmt.Println("./gvm.go -option -fileName")
