@@ -1,5 +1,5 @@
 package gvm
-//import "fmt"
+import "fmt"
 
 func Interpret(ca code_attribute, cp []cp_info) {
      s := new(Stack)
@@ -144,9 +144,9 @@ func Interpret(ca code_attribute, cp []cp_info) {
                     a := s.Pop()
                     switch a.(type) {
                         case int:
-                            args[i] = &Object{Native:a.(int)} 
+                                args[i] = &Object{Native:a.(int)} 
                         case *Object:
-                           args[i] = &Object{Native:(a.(*Object)).Native}
+                                args[i] = &Object{Native:(a.(*Object)).Native}
                     }
                 }                    
                 recv := s.Pop().(*Object)
@@ -156,24 +156,22 @@ func Interpret(ca code_attribute, cp []cp_info) {
                 pc = pc + 2
             case INVOKESPECIAL:
                 methodRefIndex := u16(code[pc:pc+2])
-                //ownerIndex := u16(cp[methodRefIndex].info[:2])
+                ownerIndex := u16(cp[methodRefIndex].info[:2])
                 nameAndTypeIndex := u16(cp[methodRefIndex].info[2:])
 
-                //ownerClassIndex := u16(cp[ownerIndex].info)
+                ownerClassIndex := u16(cp[ownerIndex].info)
 
                 //fmt.Println(cp[nameAndTypeIndex].info)
 
                 nameIndex := u16(cp[nameAndTypeIndex].info[:2])
                 typeIndex := u16(cp[nameAndTypeIndex].info[2:])
-                //owner := string(cp[ownerClassIndex].info[2:])
-
-                //fmt.Println(owner)
+                owner := string(cp[ownerClassIndex].info[2:])
 
                 desc := string(cp[typeIndex].info[2:])
                 signature := string(cp[nameIndex].info[2:]) + desc
                 //fmt.Println(signature)
-                reciver := s.Pop().(*Object)
-                method := CT(reciver.ClassName).Methods[signature]
+                //reciver := s.Pop().(*Object)
+                method := CT(owner).Methods[signature]
                 argCount := method.GetArgCount()
                 args := make([]*Object, argCount)
                 for i := 0; i < argCount; i++ {
@@ -185,10 +183,12 @@ func Interpret(ca code_attribute, cp []cp_info) {
                            args[i] = &Object{Native:(a.(*Object)).Native}
                     }
                 }                    
-                //recv := s.Pop().(*Object)
-                if void, ret := method.Invoke(reciver, args); !void {
-                    s.Push(ret)                    
+                recv := s.Pop().(*Object)
+                if void, ret := method.Invoke(recv, args); !void {
+fmt.Println("PUSH!")
+                    s.Push(ret)
                 }
+                
             
                 //reciver.Native = method.Native
                 pc = pc + 2

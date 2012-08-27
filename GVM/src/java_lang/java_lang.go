@@ -3,14 +3,15 @@ package java_lang
 import . "gvm"
 import "os"
 import . "strconv"
+//=======================================================================================================
 type init____V struct{
     native bool
 }
 func (m *init____V) Invoke(recv *Object, args []*Object) (void bool, ret interface{}) {
       recv.Native=""
-    return false, recv
+    return true, nil
 }
-func (m *init____V) GetArgCount() int { return 1 }
+func (m *init____V) GetArgCount() int { return 0 }
 //=======================================================================================================
 type append__I__Ljava_lang_StringBuilder struct{
     native bool
@@ -45,7 +46,6 @@ func Init(ct map[string]*Class) {
 
     java_lang_StringBuilder := NewClass()
     java_lang_StringBuilder.Methods["<init>()V"]=&init____V{native:true}
-    //java_lang_StringBuilder.StaticFields["<init>()V"] = &Object{Native: ""}
     java_lang_StringBuilder.Methods["append(Ljava/lang/String;)Ljava/lang/StringBuilder;"] = &append__Ljava_lang_String__Ljava_lang_StringBuilder{native:true}
     java_lang_StringBuilder.Methods["append(I)Ljava/lang/StringBuilder;"] = &append__I__Ljava_lang_StringBuilder{native:true}
     java_lang_StringBuilder.Methods["toString()Ljava/lang/String;"] = &toString____Ljava_lang_String{native:true}
