@@ -8,7 +8,7 @@ const (
     DEBUG
 )
 
-const LoggingLevel = INFO
+var LoggingLevel = INFO
 
 func _info(a ...interface{}) {
     if LoggingLevel == INFO {
