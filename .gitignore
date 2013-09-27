@@ -21,3 +21,6 @@ _testmain.go
 
 *.exe
 gvm/bin
+gvm/.idea/
+*.iml
+gvm/out/
