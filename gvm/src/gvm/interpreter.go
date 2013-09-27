@@ -140,10 +140,14 @@ func Interpret(ca code_attribute, cp []cp_info) {
                 _debug(signature)
 
                 method := CT(owner).Methods[signature]
+                if method == nil {
+                    _debug(CT(owner).Methods)
+                    panic("Method not found in CT: " + signature)
+                }
                 argCount := method.GetArgCount()
-                args := make([]*Object, argCount)
+                args := make([]interface{}, argCount)
                 for i := 0; i < argCount; i++ {
-                    args[i] = s.Pop().(*Object)
+                    args[i] = s.Pop()
                 }
                 recv := s.Pop().(*Object)
                 if void, ret := method.Invoke(recv, args); !void {

@@ -14,7 +14,7 @@ type Object struct {
 }
 
 type Method interface {
-    Invoke(recv *Object, args []*Object) (bool, interface{})
+    Invoke(recv *Object, args []interface{}) (bool, interface{})
     GetArgCount() int
 }
 
