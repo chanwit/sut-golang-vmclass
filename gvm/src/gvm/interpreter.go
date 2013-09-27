@@ -163,6 +163,9 @@ func Interpret(ca code_attribute, cp []cp_info) {
                 }
                 pc = pc + 2
 
+            case POP:
+                s.Pop()
+
             case RETURN:
                 _debug(s.locals)
                 return
