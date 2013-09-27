@@ -24,11 +24,16 @@ func Interpret(ca code_attribute, cp []cp_info) {
                     case CONSTANT_Integer:
                         value := i32(cp[index].info)
                         s.Push(value)
-                    // case CONSTANT_Class:
-                    // case CONSTANT_Float:
-                    // case CONSTANT_Long:
-                    // case CONSTANT_Double:
-                    // case CONSTANT_String:
+                    case CONSTANT_Class:
+                        panic("LDC pushing CONSTANT_Class, NYI")
+                    case CONSTANT_Float:
+                        panic("LDC pushing CONSTANT_Float, NYI")
+                    case CONSTANT_Long:
+                        panic("LDC pushing CONSTANT_Long, NYI")
+                    case CONSTANT_Double:
+                        panic("LDC pushing CONSTANT_Double, NYI")
+                    case CONSTANT_String:
+                        panic("LDC pushing CONSTANT_String, NYI")
                 }
                 pc++
 
