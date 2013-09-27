@@ -37,6 +37,8 @@ func readFile(fileClass string, cf *ClassFile) {
 
 func main() {
 
+    LoggingLevel = INFO
+
     cf := new(ClassFile)
 
     if len(os.Args) == 1 {
