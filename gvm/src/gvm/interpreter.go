@@ -76,6 +76,9 @@ func Interpret(ca code_attribute, cp []cp_info) {
             case ILOAD_3:
                 s.Load(3)
 
+            case ALOAD_0:
+                s.Load(0)
+
             case BIPUSH:
                 s.Push(int(code[pc]))
                 pc++
