@@ -1,5 +1,6 @@
 package gvm
 
+
 func Interpret(ca code_attribute, cp []cp_info) {
     // s := new(Stack)
     // s.Init(int(ca.max_stack))
@@ -14,6 +15,7 @@ func Interpret(ca code_attribute, cp []cp_info) {
         pc++
 
         switch op {
+
             case LDC:
                 index := u16(cp[code[pc]].info)
                 switch cp[index].tag {
@@ -119,7 +121,7 @@ func Interpret(ca code_attribute, cp []cp_info) {
             case GETSTATIC:
                 value := u16(code[pc:pc+2])
                 if cp[value].tag != CONSTANT_Fieldref {
-                    panic("CONSTANT_Fieldref")
+                    panic("GETSTATIC: TAG not equal to CONSTANT_Fieldref")
                 }
 
                 _debug("CONSTANT_Fieldref : ")
