@@ -25,12 +25,12 @@ func _infof(s string, a ...interface{}) {
 
 func _debug(a ...interface{}) {
     if(LoggingLevel == DEBUG) {
-        fmt.Println(a)
+        fmt.Println(a...)
     }
 }
 
 func _debugf(s string, a ...interface{}) {
     if(LoggingLevel == DEBUG) {
-        fmt.Printf(s, a)
+        fmt.Printf(s, a...)
     }
 }
