@@ -37,6 +37,20 @@ func Interpret(ca code_attribute, cp []cp_info) {
                 }
                 pc++
 
+        case LDC_W:
+                _debugf("LDC_W: >>>> %d\n", code[pc])
+                _debugf("LDC_W: >>>> %d\n", code[pc+1])
+                index := u16(code[pc:pc+2])
+                classNameIndex := u16(cp[index].info[:2])
+                className := string(cp[classNameIndex].info[2:])
+                _debugf("LDC_W: name %s\n", className)
+                switch cp[index].tag {
+                    case CONSTANT_Class:
+                        obj := &Object{ClassName:"java/lang/Class", Native: className}
+                        s.Push(obj)
+                }
+                pc = pc +2
+
             case ICONST_M1:
                 s.Push(-1)
             case ICONST_0:
