@@ -163,6 +163,9 @@ func Interpret(ca code_attribute, cp []cp_info) {
             case RETURN:
                 _debug(s.locals)
                 return
+
+            default:
+                panic("NYI opcode: " + opCodes[op])
         }
     }
 }
